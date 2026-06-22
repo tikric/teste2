@@ -17,6 +17,7 @@ import {
   Sparkles,
   Award,
   Smartphone,
+  Laptop,
   Cloud,
   Wifi,
   Lock,
@@ -703,7 +704,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
       if (isAndroidWebView) {
         if (!customKey) {
-          throw new Error("Por favor, configure sua chave Gemini API em 'Chaves Auxiliares' para gerar a paleta diretamente do celular.");
+          throw new Error("Por favor, configure sua chave Gemini API em 'Chaves Auxiliares' para gerar a paleta diretamente do navegador.");
         }
         colorsData = await callGeminiGeneratePalette(localCustomLogo, customKey);
       } else {
@@ -1193,12 +1194,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.5);
       doc.setTextColor(brandDark.r, brandDark.g, brandDark.b);
-      doc.text('Armazenamento Local (Celular) vs. Nuvem (Firebase)', 15, y);
+      doc.text('Armazenamento Local (Navegador) vs. Nuvem (Firebase)', 15, y);
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(85, 85, 85);
-      const storageDesc = 'O banco de dados nativo funciona em localStorage de forma extremamente rapida sem internet. No entanto, se o celular for formatado, os dados seriam permanentemente perdidos. Para se proteger, o sistema disponibiliza o botao de BACKUP LOCAL em formato JSON. Salve este arquivo em seu PC regularmente ou opte por conectar o Firebase para sincronização automática segura em nuvem.';
+      const storageDesc = 'O banco de dados nativo funciona em localStorage de forma extremamente rapida sem internet. No entanto, se o navegador for limpo ou o PC formatado, os dados seriam permanentemente perdidos. Para se proteger, o sistema disponibiliza o botao de BACKUP LOCAL em formato JSON. Salve este arquivo em seu computador de forma regular ou opte por conectar o Firebase para sincronização automática segura em nuvem.';
       const splitSt = doc.splitTextToSize(storageDesc, 180);
       doc.text(splitSt, 15, y + 5);
 
@@ -1260,7 +1261,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
 
         <p className="text-xs text-[#8BA58D] leading-relaxed font-sans">
-          Configuração de segurança local. Por padrão, celulares de clientes rodam em modo <strong className="text-white">"Visualizador / Cliente"</strong> para ocultar avisos de disparos e painéis de atualização do APK.
+          Configuração de segurança local. Por padrão, abas e acessos de clientes rodam em modo <strong className="text-white">"Visualizador / Cliente"</strong> para ocultar painéis de parametrização e alterações avançadas.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3">
@@ -1891,85 +1892,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
       </div>
 
-
-
-      {/* CLOUD DATABASE SYNC CONFIGURATION CARD (FIREBASE) */}
-      <div className="p-6 bg-[#151917] border border-[#232B27] rounded-3xl relative overflow-hidden space-y-5 my-6 animate-fade-in" id="card-firebase-sync">
-        <div className="absolute top-0 right-0 h-32 w-32 bg-[#E2B144]/3 rounded-full blur-2xl pointer-events-none"></div>
-        <div className="space-y-2">
-          <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#E2B144] bg-[#E2B144]/10 px-2 py-0.5 rounded border border-[#E2B144]/25 inline-block font-mono">Sincronização em Nuvem</span>
-          <h3 className="text-sm font-bold text-[#F1F4EE] flex items-center gap-1.5 flex-wrap">
-            <Cloud className="h-4.5 w-4.5 text-[#E2B144]" />
-            Conecte sua Nuvem Própria Firebase (Ateliê Sincronizado)
-          </h3>
-          <p className="text-[11px] text-[#8BA58D] leading-relaxed font-sans">
-            Seu ateliê opera em salvamento local instantâneo. Configure seu próprio <strong className="text-white">Firebase Realtime Database</strong> para sincronizar dados em tempo real entre computadores e celulares e se blindar de panes de hardware!
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans">
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#95BBA2] uppercase tracking-wider font-mono">URL REST do seu Realtime Database</label>
-            <input
-              type="text"
-              placeholder="Ex: https://seu-app-rtdb.firebaseio.com/"
-              value={firebaseUrl}
-              onChange={(e) => {
-                const val = e.target.value;
-                setFirebaseUrl(val);
-                localStorage.setItem('bambuzau_firebase_url', val.trim());
-              }}
-              className="w-full bg-[#0C0E0D] border border-[#232B27] px-3.5 py-2.5 rounded-xl text-xs text-white placeholder-zinc-700 hover:border-[#38463F] focus:border-[#52b788] outline-none font-mono"
-              id="input-firebase-url"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#95BBA2] uppercase tracking-wider font-mono">Identificador de Workspace (Pasta na Nuvem)</label>
-            <input
-              type="text"
-              placeholder="Ex: principal, filial, meu_atelie"
-              value={workspaceCode}
-              onChange={(e) => {
-                const val = e.target.value;
-                setWorkspaceCode(val);
-                localStorage.setItem('bambuzau_workspace_code', val.trim());
-              }}
-              className="w-full bg-[#0C0E0D] border border-[#232B27] px-3.5 py-2.5 rounded-xl text-xs text-white placeholder-zinc-700 hover:border-[#38463F] focus:border-[#52b788] outline-none font-mono"
-              id="input-workspace-code"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3.5 pt-1.5 font-sans">
-          <button
-            onClick={handleUploadToFirebase}
-            disabled={isSyncing}
-            className="py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-black text-xs rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-lg disabled:opacity-45"
-            id="btn-upload-to-firebase"
-          >
-            <Cloud className={`h-4 w-4 ${isSyncing ? 'animate-bounce' : ''}`} />
-            {isSyncing ? 'Enviando...' : 'Exportar para Nuvem'}
-          </button>
-
-          <button
-            onClick={handleDownloadFromFirebase}
-            disabled={isSyncing}
-            className="py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-400 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-45"
-            id="btn-download-from-firebase"
-          >
-            <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-            Restaurar da Nuvem
-          </button>
-        </div>
-
-        {lastSyncTime && (
-          <p className="text-[10px] text-center text-[#8BA58D] font-mono">
-            Última Sincronização Encontrada: <strong className="text-amber-400">{lastSyncTime}</strong>
-          </p>
-        )}
-      </div>
-
       {/* ATELIÊ INTEGRATION SERVER (API PROXY) CARD */}
       <div className="p-6 bg-[#151917] border border-[#232B27] rounded-3xl relative overflow-hidden space-y-5 my-6 animate-fade-in" id="card-ati-server-config">
         <div className="absolute top-0 right-0 h-32 w-32 bg-purple-500/5 rounded-full blur-2xl pointer-events-none"></div>
@@ -1980,7 +1902,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             Servidor de Integração do Ateliê (API Proxy)
           </h3>
           <p className="text-[11px] text-[#8BA58D] leading-relaxed font-sans">
-            Comunicações como o assistente inteligente <strong className="text-white">Ok Loja</strong>, a busca em tempo real de <strong className="text-white">Cotações de Filamentos</strong> e o acompanhamento de sensores Tuya dependem da conexão com o servidor de backend seguro do Ateliê. Se estiver usando celulares/WebViews ou vir "Failed to Fetch" no seu celular, verifique se o endereço abaixo confere e teste a conexão!
+            Comunicações como o assistente inteligente <strong className="text-white">Ok Loja</strong>, a busca em tempo real de <strong className="text-white">Cotações de Filamentos</strong> e o acompanhamento de sensores Tuya dependem da conexão com o servidor de backend seguro do Ateliê. Se houver alguma falha de carregamento ou "Failed to Fetch", verifique se o endereço abaixo de backend confere e teste a conexão!
           </p>
         </div>
 
@@ -2055,10 +1977,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#95BBA2] bg-[#95BBA2]/10 px-2 py-0.5 rounded border border-[#95BBA2]/25 inline-block font-mono">Segurança</span>
             <h3 className="text-base font-bold text-[#F1F4EE] flex items-center gap-1.5 flex-wrap">
               <Database className="h-4.5 w-4.5 text-[#E2B144]" />
-              Backup & Restauração Local (PC/Celular)
+              Backup & Restauração Local (Computador)
               <button
                 type="button"
-                onClick={() => triggerHelp('Backup & Restauração Local', 'Evite perdas em caso de formatação ou troca de celular! Salve todas as suas informações de pedidos, clientes, estoque de filamentos e impressoras em um arquivo consolidado direto no seu computador.')}
+                onClick={() => triggerHelp('Backup & Restauração Local', 'Evite perdas em caso de formatação ou limpeza do navegador! Salve todas as suas informações de pedidos, clientes, estoque de filamentos e impressoras em um arquivo consolidado direto no seu computador.')}
                 className="text-[#8BA58D] hover:text-[var(--brand-primary)] bg-[var(--brand-primary)]/5 p-1 rounded-lg border border-[var(--brand-primary)]/10 hover:border-[var(--brand-primary)]/20 transition cursor-pointer"
                 title="Ver Explicação"
               >
@@ -2106,7 +2028,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             {showClipboardBackup && (
               <div className="mt-3 bg-[#0C0E0D] border border-purple-500/10 p-3.5 rounded-xl space-y-3 animate-fade-in">
                 <p className="text-[10px] text-[#8BA58D] leading-relaxed">
-                  Bypass de arquivos para Celulares e WebViews! Trata as informações do Ateliê como um bloco de texto que você copia e cola à vontade. Versão 3.3.0.4.
+                  Cópia de segurança rápida! Trata as informações do Ateliê como um bloco de texto que você copia e cola de forma rápida e prática no seu bloco de notas ou nuvem privada. Versão 3.3.0.4.
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -2204,10 +2126,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         <div className="p-6 bg-[#151917] border border-[#1E2522] rounded-2xl space-y-4">
           <div className="border-b border-[#232B27] pb-2">
             <h3 className="text-sm font-bold text-[#F1F4EE] flex items-center gap-2">
-              <Smartphone className="h-4.5 w-4.5 text-amber-500" />
-              Histórico de Atualizações Recentes 📢
+              <Laptop className="h-4.5 w-4.5 text-amber-500" />
+              Histórico de Atualizações Recentes do ERP Web 📢
             </h3>
-            <p className="text-[11px] text-[#8BA58D]">Lista resumida dos novos ajustes do sistema de produção Gestao 3d</p>
+            <p className="text-[11px] text-[#8BA58D]">Lista resumida dos novos ajustes do sistema de produção Gestao 3d para Desktop</p>
           </div>
 
           <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
@@ -2217,8 +2139,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 <span className="text-emerald-400 font-mono font-bold">Junho/2026</span>
               </div>
               <ul className="list-disc pl-4 text-[10px] text-[#8BA58D] space-y-0.5 font-sans leading-relaxed">
-                <li><strong>Motor de Sincronização Inteligente</strong>: Upload e download automático em tempo real no celular e computador sem recarregar a página com opção de sincronização contínua.</li>
-                <li><strong>Indicador de Status em Tempo Real</strong>: Painel flutuante mostrando o status exato dos seus dados perante a nuvem do Firebase Realtime Database.</li>
+                <li><strong>Motor de Cache Local Otimizado</strong>: Carregamento instantâneo de dados no navegador com performance aprimorada para computadores.</li>
+                <li><strong>Garantia de Privacidade</strong>: Banco de dados operando 100% offline nativo protegendo dados comerciais sem compartilhamento externo indesejado.</li>
               </ul>
             </div>
 
@@ -2230,7 +2152,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               <ul className="list-disc pl-4 text-[10px] text-[#8BA58D] space-y-0.5 font-sans leading-relaxed">
                 <li><strong>Painel Analítico de Carretéis</strong>: Distribuição visual de cores em estoque com as quantidades exibidas direto dentro da bolinha com a cor correspondente.</li>
                 <li><strong>Preços Médios por Tipo</strong>: Cálculo automatizado de valor médio do rolo de 1kg por tipo de material (PLA, PETG, ABS, TPU etc.).</li>
-                <li><strong>Sincronização de Layout</strong>: Versão totalmente otimizada e compatibilizada para celulares e WebViews em tempo real.</li>
+                <li><strong>Sincronização de Layout</strong>: Versão totalmente otimizada e compatibilizada para navegadores modernos em computadores e notebooks.</li>
               </ul>
             </div>
 
@@ -2242,7 +2164,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               <ul className="list-disc pl-4 text-[10px] text-[#8BA58D] space-y-0.5 font-sans leading-relaxed">
                 <li><strong>Cálculo Inteligente de Valores</strong>: Lançamento de Gastos preenchendo automaticamente o Custo Unitário ao informar o Custo Total.</li>
                 <li><strong>Estoque Inteligente no Editar</strong>: Integração com o Estoque de Filamento e Insumos adicionada também à edição de gastos existentes.</li>
-                <li><strong>Ajuste de Decimais Dinâmicos</strong>: Suporte completo para micro-valores unitários (ex: R$ 0,0015) sem arredondamento incorreto na tela e no celular.</li>
+                <li><strong>Ajuste de Decimais Dinâmicos</strong>: Suporte completo para micro-valores unitários (ex: R$ 0,0015) sem arredondamento incorreto na tela do computador.</li>
                 <li><strong>Ordenação no PDF</strong>: Relatório PDF de custos ordenado em ordem alfabética de categorias e descrição de itens.</li>
               </ul>
             </div>
@@ -2535,12 +2457,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       {/* DIRECT APPLICATION LINK CARD */}
       <div className="p-6 bg-[#151917] border border-[#232B27] rounded-2xl space-y-4" style={{ borderColor: 'var(--brand-border)' }}>
         <div className="flex items-center gap-2 pb-2 border-b border-[#232B27]">
-          <Smartphone className="h-4.5 w-4.5 text-[#95BBA2]" />
+          <Laptop className="h-4.5 w-4.5 text-[#95BBA2]" />
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-[#F1F4EE]">Link de Acesso do Aplicativo</h3>
+            <h3 className="text-sm font-bold text-[#F1F4EE]">Link de Acesso do Sistema</h3>
             <button
               type="button"
-              onClick={() => triggerHelp('Link de Acesso do Aplicativo', 'Copie o link público do seu Gestão 3D para enviar por WhatsApp e abrir direto no celular de clientes ou em outros aparelhos sem necessidade de login cadastrado.')}
+              onClick={() => triggerHelp('Link de Acesso do Sistema', 'Copie o link público do seu Gestão 3D para abrir direto no navegador de outro computador ou compartilhar sem necessidade de login cadastrado.')}
               className="text-[#8BA58D] hover:text-[var(--brand-primary)] bg-[var(--brand-primary)]/5 p-1 rounded-lg border border-[var(--brand-primary)]/10 hover:border-[var(--brand-primary)]/20 transition cursor-pointer"
               title="Ver Explicação"
             >
@@ -2569,236 +2491,23 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               const origin = typeof window !== 'undefined' ? window.location.origin : '';
               const link = origin.includes('ais-dev-') ? origin.replace('ais-dev-', 'ais-pre-') : origin;
               navigator.clipboard.writeText(link);
-              showSuccess("Link público copiado com sucesso! Você já pode colar e enviar pelo WhatsApp.");
+              showSuccess("Link público copiado com sucesso!");
             }}
             className="w-full md:w-auto px-5 py-3 bg-[#637E55] hover:bg-[#536B47] text-[#F7F4E9] rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
             style={{ backgroundColor: 'var(--brand-primary)', color: 'var(--brand-secondary-bg)' }}
             id="btn_copy_direct_link"
           >
-            Copiar Link para WhatsApp
+            Copiar Link de Acesso
           </button>
         </div>
 
         <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex gap-3 text-[#F1F4EE]">
           <Info className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
           <p className="text-[11px] text-[#8BA58D] leading-normal font-sans">
-            <strong>Dica de Acesso:</strong> O link acima utiliza o prefixo compartilhado <code>ais-pre-</code>. Essa URL é pública e abre instantaneamente em qualquer dispositivo, celular ou tablet de terceiros sem exigir nenhuma permissão ou cadastro de e-mail de desenvolvedor!
+            <strong>Dica de Acesso:</strong> O link acima utiliza o prefixo compartilhado <code>ais-pre-</code>. Essa URL é pública e abre instantaneamente em qualquer dispositivo ou computador de terceiros sem exigir nenhuma permissão ou cadastro de e-mail de desenvolvedor!
           </p>
         </div>
       </div>
-
-      {/* OTA UPDATE DISPATCHER CARD */}
-      {userRole === 'admin' && (
-        <div className="p-6 bg-[#151917] border border-[#232B27] rounded-2xl space-y-4 shadow-xl font-sans text-[#F1F4EE]" style={{ borderColor: 'var(--brand-border)' }}>
-          <div className="flex items-center gap-2 pb-2 border-b border-[#232B27]">
-            <Smartphone className="h-4.5 w-4.5 text-amber-500 shrink-0" />
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-[#F1F4EE]">Notificação de Atualização para Clientes (OTA) 🚀</h3>
-              <button
-                type="button"
-                onClick={() => triggerHelp('Atualização do App (OTA)', 'Esta seção permite disparar notificações de nova versão direto para os celulares sincronizados dos seus clientes e parceiros do mesmo Workspace. Ao preencher os dados, um card de aviso aparecerá instantaneamente no topo da tela sugerindo baixar o novo APK instalado.')}
-                className="text-[#8BA58D] hover:text-[var(--brand-primary)] bg-[var(--brand-primary)]/5 p-1 rounded-lg border border-[var(--brand-primary)]/10 hover:border-[var(--brand-primary)]/20 transition cursor-pointer"
-                title="Ver Explicação"
-              >
-                <HelpCircle className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          <p className="text-xs text-[#8BA58D] leading-relaxed font-sans">
-            Sempre que compilar uma nova versão do aplicativo (APK) ou quiser notificar seus usuários sincronizados, preencha as informações abaixo e clique em Disparar. Isso criará um aviso no topo do app do celular de todos os usuários do Workspace ativo de forma imediata!
-          </p>
-
-          {/* DIAGNOSTIC WIDGET PANEL FOR OTA UPDATES */}
-          {(() => {
-            const getLocalAppVer = () => {
-              // Retorna a versão dos ativos Web ativos em execução (v3.3.0.4). Isso resolve o loop de atualizações no smartphone
-              return '3.3.0.4';
-            };
-
-            const getNativeShellVer = () => {
-              if (typeof window !== 'undefined') {
-                if ((window as any).AndroidInterface && typeof (window as any).AndroidInterface.getNativeVersion === 'function') {
-                  try { return (window as any).AndroidInterface.getNativeVersion(); } catch (e) {}
-                }
-              }
-              return null;
-            };
-
-            const localVer = getLocalAppVer();
-            const nativeShellVer = getNativeShellVer();
-            const remoteVer = liveFirebaseUpdate?.version;
-            const remoteTimestamp = liveFirebaseUpdate?.timestamp || 0;
-            const remoteNotes = liveFirebaseUpdate?.releaseNotes || '';
-            const remoteApk = liveFirebaseUpdate?.apkUrl || '';
-
-            const isNewer = (remote: string, current: string): boolean => {
-              const parseParts = (v: string) => v.split('.').map(x => parseInt(x, 10) || 0);
-              const rParts = parseParts(remote);
-              const cParts = parseParts(current);
-              for (let i = 0; i < Math.max(rParts.length, cParts.length); i++) {
-                const r = rParts[i] || 0;
-                const c = cParts[i] || 0;
-                if (r > c) return true;
-                if (r < c) return false;
-              }
-              return false;
-            };
-
-            const newerThanLocal = remoteVer ? isNewer(remoteVer, localVer) : false;
-            const dismissedVer = dismissedVersionLocal || localStorage.getItem('bambuzau_dismissed_version') || '';
-            const dismissedTimestamp = dismissedTimestampLocal || parseInt(localStorage.getItem('bambuzau_dismissed_timestamp') || '0', 10);
-            const isDismissed = dismissedVer === remoteVer && remoteTimestamp === dismissedTimestamp;
-
-            return (
-              <div className="p-4 bg-[#0A0D0B] border border-[#232B27] rounded-xl space-y-3 text-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1E2522] pb-2">
-                  <span className="font-bold text-[#8BA58D] uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                    <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
-                    Diagnóstico de Conexão e Atualizações
-                  </span>
-                  <button 
-                    type="button" 
-                    onClick={fetchLiveFirebaseUpdate} 
-                    disabled={isCheckingLiveFirebase}
-                    className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-white text-[9.5px] font-bold rounded-lg flex items-center gap-1 cursor-pointer transition disabled:opacity-50"
-                  >
-                    <RefreshCw className={`h-3 w-3 ${isCheckingLiveFirebase ? 'animate-spin' : ''}`} />
-                    Consultar Firebase
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-[11px]">
-                  <div>
-                    <span className="text-[#8BA58D] text-[10px]">Sua Versão (Símula Web/OTA):</span>
-                    <strong className="block text-white text-xs mt-0.5 font-sans">v{localVer}</strong>
-                  </div>
-                  {nativeShellVer && (
-                    <div>
-                      <span className="text-[#8BA58D] text-[10px]/normal block">Versão do APK Base (Shell):</span>
-                      <strong className="block text-teal-400 text-xs mt-0.5 font-sans">v{nativeShellVer}</strong>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-[#8BA58D] text-[10px]">Versão Pública no seu Firebase:</span>
-                    <strong className="block text-amber-400 text-xs mt-0.5 font-sans">
-                      {isCheckingLiveFirebase ? 'Buscando...' : remoteVer ? `v${remoteVer}` : 'Nenhuma (vazio)'}
-                    </strong>
-                  </div>
-                </div>
-
-                {liveFirebaseError && (
-                  <div className="p-2.5 bg-red-950/20 border border-red-900/40 text-red-400 rounded-lg text-[11px]">
-                    ⚠️ Erro na consulta ao Firebase: {liveFirebaseError}. Verifique os dados de sincronização acima.
-                  </div>
-                )}
-
-                {!liveFirebaseError && liveFirebaseUpdate && (
-                  <div className="space-y-2 mt-1">
-                    {isDismissed ? (
-                      <div className="p-2.5 bg-red-950/20 border-l-2 border-red-500 rounded-r-lg text-[10.5px] leading-relaxed text-zinc-300">
-                        <div className="font-bold text-red-400 flex items-center gap-1 text-[11px] mb-0.5">
-                          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                          AVISO SILENCIADO NESTE CELULAR
-                        </div>
-                        Você já clicou em <strong>"Depois"</strong> para recusar a versão <strong className="text-white">v{remoteVer}</strong> neste aparelho.<br/>
-                        <button 
-                          type="button"
-                          onClick={handleClearDismissedAvisos}
-                          className="mt-1.5 px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-black text-[9px] font-black rounded cursor-pointer transition uppercase tracking-wider"
-                        >
-                          🔄 Forçar Reaparecimento do Banner
-                        </button>
-                      </div>
-                    ) : newerThanLocal ? (
-                      <div className="p-2.5 bg-emerald-950/25 border-l-2 border-emerald-500 rounded-r-lg text-[10.5px] leading-relaxed text-zinc-300">
-                        <div className="font-bold text-emerald-400 flex items-center gap-1 text-[11px] mb-0.5">
-                          <Check className="h-3.5 w-3.5 shrink-0" />
-                          NOTIFICAÇÃO DISPONÍVEL! 🚀
-                        </div>
-                        Tudo 100% correto! A versão na nuvem (<strong className="text-white">v{remoteVer}</strong>) é superior à do seu celular (v{localVer}). O banner de instalação aparecerá no topo do app para ser baixado sem login.
-                      </div>
-                    ) : (
-                      <div className="p-2.5 bg-amber-500/10 border-l-2 border-amber-500 rounded-r-lg text-[10.5px] leading-relaxed text-zinc-300">
-                        <div className="font-bold text-amber-500 flex items-center gap-1 text-[11px] mb-0.5">
-                          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                          SEU DISPOSITIVO JÁ ESTÁ ATUALIZADO
-                        </div>
-                        Seu celular/navegador está na versão <strong>v{localVer}</strong> e na nuvem está a <strong>v{remoteVer}</strong>. Como são iguais, o celular sabe que já está na última versão e não exibe o banner.<br />
-                        <div className="mt-1.5 p-1.5 bg-black/40 rounded border border-amber-950/40 text-[10px] text-amber-200">
-                          👉 <strong>Como Testar:</strong> Insira a versão como <strong className="text-white">3.1</strong> (superior a 3.0) no formulário abaixo, cole seu link do Dropbox e clique no botão de disparar!
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="p-2 bg-black/40 rounded-lg text-[9.5px] text-zinc-400 font-mono space-y-0.5">
-                      <div><strong className="text-zinc-300">Link Atual:</strong> <span className="break-all text-amber-100">{remoteApk}</span></div>
-                      {remoteNotes && <div><strong className="text-zinc-300">Notas:</strong> <span className="text-zinc-300">{remoteNotes}</span></div>}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-[#8BA58D]">Número da Nova Versão</label>
-              <input 
-                type="text" 
-                value={updateVersion}
-                onChange={(e) => setUpdateVersion(e.target.value)}
-                className="bg-[#0C0E0D] border border-[#232B27] px-3 py-2.5 rounded-xl text-xs text-[#F1F4EE] outline-none font-mono font-semibold"
-                placeholder="Ex: 2.5"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-[#8BA58D]">URL de Download do Instalador (APK)</label>
-              <input 
-                type="url" 
-                value={updateApkUrl}
-                onChange={(e) => setUpdateApkUrl(e.target.value)}
-                className="bg-[#0C0E0D] border border-[#232B27] px-3 py-2.5 rounded-xl text-xs text-[#F1F4EE] outline-none focus:border-amber-500 font-mono font-semibold"
-                placeholder="Ex: https://meusite.com/gestao3d-v2.5.apk"
-              />
-              <p className="text-[10px] text-amber-500/90 leading-tight">
-                💡 <strong>Dica:</strong> Links do visualizador do Google Drive (ex: <code>/file/d/.../view</code>) abrem uma página HTML e causam "Erro ao analisar o pacote" no celular. <strong>Não se preocupe!</strong> O sistema converte automaticamente links do Google Drive e do Dropbox para download direto real quando você clica em disparar a atualização!
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-[#8BA58D]">Notas da Atualização / Novidades</label>
-            <textarea 
-              rows={2}
-              value={updateNotes}
-              onChange={(e) => setUpdateNotes(e.target.value)}
-              className="bg-[#0C0E0D] border border-[#232B27] px-3 py-2.5 rounded-xl text-xs text-[#F1F4EE] outline-none focus:border-[#95BBA2] font-sans resize-none"
-              placeholder="Ex: Corrigido problema ao carregar filamento offline e nova interface para cálculo de margem de custos!"
-            />
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-2">
-            <div className="text-[11px] text-[#8BA58D] leading-tight font-sans">
-              Seus parceiros que utilizam o mesmo Workspace (atualmente: <strong className="text-white">"{workspaceCode}"</strong>) receberão a opção de baixar o novo instalador na hora.
-            </div>
-
-            <button
-              onClick={handlePublishUpdateToFirebase}
-              disabled={isPublishingUpdate}
-              className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shrink-0 cursor-pointer disabled:opacity-50"
-            >
-              {isPublishingUpdate ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4" />
-              )}
-              {isPublishingUpdate ? 'Publicando...' : 'Disparar Alerta de Atualização 📢'}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* WHITE LABEL BRAND CUSTOMIZATION PANEL */}
       <div className="p-6 bg-[#151917] border border-[#232B27] rounded-2xl space-y-4">
@@ -2957,7 +2666,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           <div className="flex justify-between items-center bg-[#0C0E0D]/40 p-3 rounded-xl border border-[#232B27]/50">
             <span className="text-[11px] text-[#8BA58D] flex items-center gap-1.5">
               <Award className="h-3.5 w-3.5 text-[#E2B144]" />
-              Mesmo atualizando o código através de um novo APK, esta customização ficará gravada localmente de forma isolada!
+              Mesmo atualizando o sistema ou limpando caches, esta customização ficará gravada localmente de forma isolada!
             </span>
             
             <button
@@ -2981,20 +2690,20 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         <div className="space-y-3" id="faq-accordion-container">
           {[
             {
-              q: 'Se o banco de dados está no celular, então para que serve o Firebase?',
-              a: 'O armazenamento local guarda seus dados de forma ultra-rápida no navegador do smartphone ou PC usando localStorage. No entanto, o Firebase serve como um servidor central online. Se o seu ateliê crescer e você quiser sincronizar o controle com mais computadores ou funcionários ao mesmo tempo (multi-usuário), ou se quiser garantir que nenhuma pane destrua os dados, o Firebase atua como um cofre centralizado na nuvem, onde tudo é submetido em tempo real e fica online.'
+              q: 'Onde os meus dados são salvos no sistema?',
+              a: 'Seus dados de clientes, pedidos, faturas, impressoras, estoque de filamentos e configurações de marca são gravados de forma instantânea e 100% segura no próprio navegador do seu computador (armazenamento local HTML5 localStorage). Isso garante velocidade máxima, independência de internet instável e privacidade absoluta, pois nenhum dado pessoal do seu negócio sai do seu dispositivo.'
             },
             {
-              q: 'Se formatar o celular eu perco tudo? Como me proteger disso?',
-              a: 'Sim. Se você formatar o celular ou limpar todos os dados do navegador/aplicativo sem ter feito backup, as informações locais serão deletadas de forma definitiva. Para se proteger, você tem duas excelentes alternativas: 1) Crie o hábito de clicar no nosso botão "Exportar JSON" semanalmente e salve o arquivo no seu computador ou no Google Drive; ou 2) Configure uma chave de banco Firebase, que enviará os dados diretamente para a nuvem de forma automática.'
+              q: 'Se eu formatar o computador ou limpar totalmente o histórico do navegador perco meus dados?',
+              a: 'Sim, pois o armazenamento padrão é feito localmente no seu navegador ativo. Para garantir total segurança e blindagem contra limpezas involuntárias de cache ou panes de hardware no computador, criamos opções de backup resilientes. Recomendamos fortemente que você exporte seus dados regularmente clicando no botão "Exportar JSON" e guarde este arquivo leve do backup em uma pasta local segura ou no seu Google Drive.'
             },
             {
-              q: 'Posso fazer backups de forma prática? Como restaurar?',
-              a: 'Sim, totalmente! O processo de backup é imediato. Ao clicar em "Exportar JSON", o sistema cria um arquivo pequeno e leve (.json). Se você trocar de aparelho, formatar, ou se algo sumir, basta clicar em "Importar Backup" no novo dispositivo, selecionar esse arquivo baixado, e o aplicativo será totalmente restaurado exatamente no estado do backup com todos os seus clientes, bobinas e faturamentos intactos.'
+              q: 'Posso fazer backups de formato prático? Como restaurar os dados em outro PC?',
+              a: 'Sim, totalmente! O processo de backup é imediato. Ao clicar em "Exportar JSON", o sistema cria um arquivo leve (.json). Se você trocar de computador, limpar o navegador ou quiser apenas guardar um ponto seguro, basta clicar em "Importar Backup" no novo dispositivo, selecionar esse arquivo baixado e o aplicativo será restaurado no estado exato do backup, com todos os seus dados intactos.'
             },
             {
-              q: 'O outro dono quer usar o app: Como enviar atualizações sem perder a customização de cores e a logo dele?',
-              a: 'Criamos o Painel de Customização White-Label exatamente para essa necessidade! O código do seu aplicativo é totalmente independente das configurações visuais de marca. Ao compilar e enviar o APK atualizado para ele, as configurações individuais que ele aplicou (Nome da Loja, Logotipo e Cores) são salvas em chaves exclusivas do localStorage dele. Isso significa que você pode atualizar o aplicativo enviando novas versões do arquivo APK à vontade, e o cliente dele continuará exibindo as cores dele, mantendo o logo personalizado sem que você precise reescrever o código!'
+              q: 'Como funcionam as atualizações do sistema e as customizações de marca?',
+              a: 'Criamos o Painel de Customização White-Label de forma inteligente! Suas configurações de marca (Cores, Logo e Nome do Ateliê ERP) ficam gravadas em locais isolados no navegador do seu computador. Quando o sistema recebe atualizações de novos recursos de cálculo, notas e relatórios direto do servidor, suas customizações permanecem ativas e seguras automaticamente, sem nenhuma perda de dados ou reescrita.'
             }
           ].map((item, idx) => {
             const isOpen = faqOpen[idx];

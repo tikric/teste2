@@ -900,80 +900,6 @@ export default function App() {
   const [updateBanner, setUpdateBanner] = useState<{ version: string; apkUrl: string; releaseNotes: string; timestamp: number } | null>(null);
 
   useEffect(() => {
-    const checkUpdates = async () => {
-      try {
-        // Habilitado para todos os dispositivos e perfis (gestor e clientes) receberem
-        // a notificação flutuante de atualização de APK de forma imediata ao sincronizar!
-        const firebaseUrl = localStorage.getItem('bambuzau_firebase_url') || 'https://bambuzau1-60868-default-rtdb.firebaseio.com/';
-        const workspaceCode = localStorage.getItem('bambuzau_workspace_code') || 'principal';
-        if (firebaseUrl && workspaceCode) {
-          let formattedUrl = firebaseUrl.trim();
-          if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-            formattedUrl = 'https://' + formattedUrl;
-          }
-          if (!formattedUrl.endsWith('/')) {
-            formattedUrl += '/';
-          }
-          const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}/update_info.json?nocache=${Date.now()}`;
-          const response = await fetch(targetUrl, { cache: 'no-store' });
-          if (response.ok) {
-            const data = await response.json();
-            if (data && data.version) {
-              const currentVersionStr = getAppVersion();
-              const dismissedVersion = localStorage.getItem('bambuzau_dismissed_version');
-              const dismissedTimestampStr = localStorage.getItem('bambuzau_dismissed_timestamp');
-              const dismissedTimestamp = dismissedTimestampStr ? parseInt(dismissedTimestampStr, 10) : 0;
-              const dismissedTimeStr = localStorage.getItem('bambuzau_dismissed_time');
-              const dismissedTime = dismissedTimeStr ? parseInt(dismissedTimeStr, 10) : 0;
-              const remoteTimestamp = data.timestamp || 0;
-              
-              // Se o cliente já dispensou especificamente esta atualização, respeita.
-              // A MENOS que a versão remota tenha sido republicada com um timestamp mais recente que o momento em que foi apagada!
-              if (dismissedVersion === data.version && remoteTimestamp <= dismissedTime) {
-                setUpdateBanner(null);
-                return;
-              }
-
-              // Função auxiliar para comparar versões semver (ex: "2.8.1" > "2.8") de forma precisa
-              const isNewerVersion = (remote: string, current: string): boolean => {
-                const parseParts = (v: string) => v.split('.').map(x => parseInt(x, 10) || 0);
-                const remoteParts = parseParts(remote);
-                const currentParts = parseParts(current);
-                
-                for (let i = 0; i < Math.max(remoteParts.length, currentParts.length); i++) {
-                  const r = remoteParts[i] || 0;
-                  const c = currentParts[i] || 0;
-                  if (r > c) return true;
-                  if (r < c) return false;
-                }
-                return false;
-              };
-
-              if (isNewerVersion(data.version, currentVersionStr)) {
-                setUpdateBanner({
-                  version: data.version,
-                  apkUrl: data.apkUrl || '',
-                  releaseNotes: data.releaseNotes || 'Melhorias de estabilidade e novas funcionalidades',
-                  timestamp: data.timestamp || 0
-                });
-              } else {
-                setUpdateBanner(null);
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("Silent version check failed:", err);
-      }
-    };
-
-    checkUpdates();
-    
-    // Escuta mudanças de perfil efetuadas localmente no SettingsTab e eventos customizados locais
-    const handleStorageChange = () => {
-      checkUpdates();
-    };
-
     const handleSafeAlert = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail) {
@@ -983,213 +909,20 @@ export default function App() {
       }
     };
     
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('bambuzau_force_update_check', handleStorageChange);
     window.addEventListener('bambuzau_safe_alert', handleSafeAlert);
 
-    const interval = setInterval(checkUpdates, 600000); // 10 minutes
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('bambuzau_force_update_check', handleStorageChange);
       window.removeEventListener('bambuzau_safe_alert', handleSafeAlert);
     };
   }, []);
 
-  // Core Real-Time Cloud Synchronization Engine (v3.3.0.4)
-  const downloadAndApplyFromCloud = async (silent = false) => {
-    const firebaseUrl = localStorage.getItem('bambuzau_firebase_url') || 'https://bambuzau1-60868-default-rtdb.firebaseio.com/';
-    const workspaceCode = localStorage.getItem('bambuzau_workspace_code') || 'principal';
-    
-    if (!firebaseUrl || !workspaceCode) {
-      if (!silent) setGlobalToast("⚠️ Servidor ou Workspace Firebase não configurado!");
-      return;
-    }
-
-    let formattedUrl = firebaseUrl.trim();
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-      formattedUrl = 'https://' + formattedUrl;
-    }
-    if (!formattedUrl.endsWith('/')) {
-      formattedUrl += '/';
-    }
-
-    if (!silent) {
-      setIsSyncingGlobal(true);
-    }
-    try {
-      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}.json`;
-      const response = await fetch(targetUrl);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (!data || data === 'null') {
-        throw new Error(`Workspace vazio ou inexistente.`);
-      }
-
-      // Hot-apply all states to avoid total page refresh
-      if (data.clients) setClients(data.clients);
-      if (data.printers) setPrinters(data.printers);
-      if (data.orders) setOrders(data.orders);
-      if (data.filamentStocks) setFilamentStocks(data.filamentStocks);
-      if (data.expenses) setExpenses(data.expenses);
-      if (data.shoppingItems) setShoppingItems(data.shoppingItems);
-      if (data.tuyaDevices && data.tuyaDevices.length > 0) setTuyaDevices(data.tuyaDevices);
-      if (data.brandConfig) setBrandConfig(data.brandConfig);
-
-      // Write straight to localStorage as a durable backing
-      if (data.clients) localStorage.setItem('bambuzau_clients', JSON.stringify(data.clients));
-      if (data.printers) localStorage.setItem('bambuzau_printers', JSON.stringify(data.printers));
-      if (data.orders) localStorage.setItem('bambuzau_orders', JSON.stringify(data.orders));
-      if (data.filamentStocks) localStorage.setItem('bambuzau_filament', JSON.stringify(data.filamentStocks));
-      if (data.expenses) localStorage.setItem('bambuzau_expenses', JSON.stringify(data.expenses));
-      if (data.shoppingItems) localStorage.setItem('bambuzau_shopping', JSON.stringify(data.shoppingItems));
-      if (data.brandConfig) localStorage.setItem('bambuzau_brand_config', JSON.stringify(data.brandConfig));
-      if (data.tuyaDevices) localStorage.setItem('bambuzau_tuya_devices', JSON.stringify(data.tuyaDevices));
-      if (data.catalogItems) localStorage.setItem('bambuzau_local_catalog_production', JSON.stringify(data.catalogItems));
-
-      const nowStr = new Date().toLocaleString('pt-BR');
-      localStorage.setItem('bambuzau_last_sync_time', nowStr);
-      localStorage.setItem('bambuzau_last_local_update_time', (data.updatedAt || Date.now()).toString());
-      setLastSyncTime(nowStr);
-      setCloudSyncStatus('synced');
-
-      setGlobalToast("✨ Sincronização em Nuvem concluída e aplicada!");
-    } catch (e: any) {
-      console.warn("Cloud sync down failure", e);
-      if (!silent) {
-        setGlobalToast(`❌ Falha ao resgatar dados: ${e.message}`);
-      }
-    } finally {
-      if (!silent) {
-        setIsSyncingGlobal(false);
-      }
-    }
+  // Core Cloud Synchronization disabled for offline safety
+  const downloadAndApplyFromCloud = async (silent = true) => {
+    return;
   };
-
   const triggerAutoUpload = async () => {
-    const firebaseUrl = localStorage.getItem('bambuzau_firebase_url') || 'https://bambuzau1-60868-default-rtdb.firebaseio.com/';
-    const workspaceCode = localStorage.getItem('bambuzau_workspace_code') || 'principal';
-
-    if (!firebaseUrl || !workspaceCode || isSyncingGlobal || isSyncingBackground) return;
-
-    let formattedUrl = firebaseUrl.trim();
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-      formattedUrl = 'https://' + formattedUrl;
-    }
-    if (!formattedUrl.endsWith('/')) {
-      formattedUrl += '/';
-    }
-
-    setIsSyncingBackground(true);
-    try {
-      const payload = {
-        updatedAt: Date.now(),
-        clients: clients || [],
-        printers: printers || [],
-        orders: orders || [],
-        filamentStocks: filamentStocks || [],
-        expenses: expenses || [],
-        shoppingItems: shoppingItems || [],
-        catalogItems: JSON.parse(localStorage.getItem('bambuzau_local_catalog_production') || '[]'),
-        brandConfig: brandConfig,
-        tuyaDevices: tuyaDevices || [],
-        customKeys: {
-          geminiKey: localStorage.getItem('bambuzau_custom_gemini_key') || '',
-          groqKey: localStorage.getItem('bambuzau_custom_groq_key') || '',
-          serpKey: localStorage.getItem('bambuzau_custom_serp_key') || '',
-          tavilyKey: localStorage.getItem('bambuzau_custom_tavily_key') || '',
-          jinaKey: localStorage.getItem('bambuzau_custom_jina_key') || '',
-          aiProvider: localStorage.getItem('bambuzau_ai_provider') || 'gemini',
-          webOrigin: typeof window !== 'undefined' ? window.location.origin : ''
-        }
-      };
-
-      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}.json`;
-      const response = await fetch(targetUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const nowStr = new Date().toLocaleString('pt-BR');
-        localStorage.setItem('bambuzau_last_sync_time', nowStr);
-        setLastSyncTime(nowStr);
-        setCloudSyncStatus('synced');
-      }
-    } catch (e) {
-      console.warn("Background auto-upload sync failure:", e);
-    } finally {
-      setIsSyncingBackground(false);
-    }
+    return;
   };
-
-  // Track local modifications and trigger auto sync uploads
-  const isFirstMount = useRef(true);
-  useEffect(() => {
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      return;
-    }
-
-    const now = Date.now();
-    localStorage.setItem('bambuzau_last_local_update_time', now.toString());
-
-    if (isAutoSync) {
-      const dbTimer = setTimeout(() => {
-        triggerAutoUpload();
-      }, 3000); // 3 seconds debounced
-      return () => clearTimeout(dbTimer);
-    }
-  }, [clients, printers, orders, filamentStocks, expenses, shoppingItems, tuyaDevices, brandConfig]);
-
-  // Periodic polling of cloud update timestamp to identify cellular/device synchronizations
-  useEffect(() => {
-    const firebaseUrl = localStorage.getItem('bambuzau_firebase_url') || 'https://bambuzau1-60868-default-rtdb.firebaseio.com/';
-    const workspaceCode = localStorage.getItem('bambuzau_workspace_code') || 'principal';
-
-    if (!firebaseUrl || !workspaceCode) return;
-
-    let formattedUrl = firebaseUrl.trim();
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-      formattedUrl = 'https://' + formattedUrl;
-    }
-    if (!formattedUrl.endsWith('/')) {
-      formattedUrl += '/';
-    }
-
-    const runCheckSync = () => {
-      const localTs = parseInt(localStorage.getItem('bambuzau_last_local_update_time') || '0', 10);
-      
-      fetch(`${formattedUrl}workspaces/${workspaceCode.trim()}/updatedAt.json?nocache=${Date.now()}`)
-        .then(res => res.json())
-        .then(cloudTs => {
-          if (cloudTs && typeof cloudTs === 'number') {
-            if (cloudTs > localTs + 2000) {
-              setCloudSyncStatus('newer');
-              if (isAutoSync) {
-                // Instantly apply clean silent cloud resync
-                downloadAndApplyFromCloud(true);
-              }
-            } else if (localTs > cloudTs + 2000) {
-              setCloudSyncStatus('older');
-            } else {
-              setCloudSyncStatus('synced');
-            }
-          }
-        })
-        .catch(() => {});
-    };
-
-    runCheckSync();
-    const intervalId = setInterval(runCheckSync, 30000); // Check every 30 seconds
-    return () => clearInterval(intervalId);
-  }, [isAutoSync]);
 
   const handleImportAllData = (data: {
     clients?: Client[];
@@ -1568,15 +1301,15 @@ export default function App() {
       textAccent: '#C6942C',
     },
     'dark-slate': {
-      bgMain: '#111417',
-      bgCard: '#191D22',
-      borderColor: '#282F37',
-      colorPrimary: '#4A85D2',
-      colorPrimaryLight: '#699CE2',
-      colorAccent: '#A2ACB9',
-      colorText: '#F3F5F7',
-      colorMuted: '#8D939F',
-      textAccent: '#4A85D2',
+      bgMain: '#08090C',
+      bgCard: 'rgba(13, 16, 23, 0.45)',
+      borderColor: 'rgba(255, 255, 255, 0.05)',
+      colorPrimary: '#3083FF',
+      colorPrimaryLight: '#5CA0FF',
+      colorAccent: '#10B981',
+      colorText: '#F8FAFC',
+      colorMuted: '#94A3B8',
+      textAccent: '#3083FF',
     },
     'gold-royal': {
       bgMain: '#0A0907',
@@ -1803,25 +1536,30 @@ export default function App() {
       {/* GLOBAL BRAND STYLING INJECTOR */}
       <style>{`
         :root {
-          --brand-bg: #05070c;
-          --brand-card: rgba(255, 255, 255, 0.04);
-          --brand-border: rgba(255, 255, 255, 0.09);
+          --brand-bg: #07090e;
+          --brand-card: rgba(13, 16, 23, 0.45);
+          --brand-border: rgba(255, 255, 255, 0.05);
           --brand-primary: ${domainColorPrimary};
           --brand-primary-light: ${domainColorPrimaryLight};
           --brand-accent: ${domainColorAccent};
-          --brand-text: #F3F5F7;
-          --brand-muted: #8E96A5;
+          --brand-text: #F8FAFC;
+          --brand-muted: #94A3B8;
           --brand-text-accent: ${domainTextAccent};
         }
         
         body {
           background-color: var(--brand-bg) !important;
-          background-image: radial-gradient(circle at top right, #0d1525 0%, #100d1c 45%, #05070c 100%) !important;
+          background-image: radial-gradient(at 0% 0%, rgba(48, 131, 255, 0.06) 0, transparent 40%), radial-gradient(at 50% 0%, rgba(99, 102, 241, 0.05) 0, transparent 60%), radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.04) 0, transparent 40%), linear-gradient(135deg, #07090e 0%, #0c0f16 100%) !important;
           color: var(--brand-text) !important;
           transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        /* Auto GLASSMORPHISM for cards and grids */
+        h1, h2, h3, h4, .font-display {
+          font-family: var(--font-display), var(--font-sans) !important;
+          letter-spacing: -0.02em !important;
+        }
+
+        /* Auto GLASSMORPHISM for cards and grids with glowing hover border effects */
         .bg-\\[\\#151917\\],
         .bg-zinc-900,
         .bg-neutral-900,
@@ -1829,12 +1567,17 @@ export default function App() {
         .bg-zinc-950,
         .bg-\\[var\\(--brand-card\\)\\],
         [style*="var(--brand-card)"] {
-          background-color: rgba(255, 255, 255, 0.04) !important;
-          border: 1px solid rgba(255, 255, 255, 0.09) !important;
-          backdrop-filter: blur(14px) !important;
-          -webkit-backdrop-filter: blur(14px) !important;
-          border-radius: 1rem !important; /* rounded-2xl */
-          box-shadow: 0 10px 30px -15px rgba(0,0,0,0.5) !important;
+          background-color: rgba(13, 16, 23, 0.45) !important;
+          border: 1px solid rgba(255, 255, 255, 0.05) !important;
+          backdrop-filter: blur(20px) !important;
+          -webkit-backdrop-filter: blur(20px) !important;
+          border-radius: 1.25rem !important; /* rounded-2xl */
+          box-shadow: 0 20px 40px -15px rgba(0,0,0,0.7) !important;
+          transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .bg-\\[\\#151917\\]:hover {
+          border-color: rgba(255, 255, 255, 0.09) !important;
         }
 
         /* Global custom rounded class and shadows */
@@ -1923,12 +1666,18 @@ export default function App() {
         
         /* Input styling glass */
         input, select, textarea {
-          background-color: rgba(255, 255, 255, 0.03) !important;
+          background-color: rgba(13, 16, 23, 0.6) !important;
           color: var(--brand-text) !important;
-          border: 1px solid rgba(255, 255, 255, 0.09) !important;
-          border-radius: 1rem !important; /* rounded-2xl */
+          border: 1px solid rgba(255, 255, 255, 0.06) !important;
+          border-radius: 0.875rem !important;
           backdrop-filter: blur(8px) !important;
-          box-shadow: inset 0 2px 4px rgba(0,0,0,0.15) !important;
+          box-shadow: inset 0 1px 2px rgba(0,0,0,0.2) !important;
+          transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
+          outline: none !important;
+        }
+        input:focus, select:focus, textarea:focus {
+          border-color: var(--brand-primary) !important;
+          box-shadow: 0 0 12px rgba(48, 131, 255, 0.25), inset 0 1px 2px rgba(0,0,0,0.2) !important;
         }
 
         /* Buttons fallback style */
@@ -2090,78 +1839,15 @@ export default function App() {
             <span className="font-semibold tracking-wider text-white">{currentTime.toLocaleTimeString('pt-BR')}</span>
           </div>
 
-          {/* Extruder activity stat with database connector styling */}
-          {safeGetLocalStorageItem('bambuzau_workspace_code') && (
-            <div className="flex items-center gap-2 bg-[#0C0E0D]/85 border border-[#232B27] px-3.5 py-2 rounded-xl font-mono text-xs text-zinc-200 shadow-sm" title={`Mudar banco de dados nas configurações: ${safeGetLocalStorageItem('bambuzau_firebase_url') || 'padrão'}`}>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-              </span>
-              <span className="font-bold text-[9px] uppercase opacity-75 text-zinc-400">Work:</span>
-              <span className="font-bold tracking-wide text-emerald-400">{safeGetLocalStorageItem('bambuzau_workspace_code')}</span>
-            </div>
-          )}
-
-          {/* Cloud Database Sincronização Indicator & Button (v3.3.0.4) */}
-          {safeGetLocalStorageItem('bambuzau_firebase_url') && (
-            <div 
-              className="flex items-center gap-2 bg-[#0C0E0D]/85 border border-[#232B27] px-3 py-1.5 rounded-xl font-sans text-xs text-zinc-350 shadow-sm"
-              title={`Sincronização Nuvem: ${safeGetLocalStorageItem('bambuzau_firebase_url')}`}
-            >
-              <span className="relative flex h-2 w-2">
-                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                  cloudSyncStatus === 'newer' ? 'bg-amber-400' :
-                  cloudSyncStatus === 'synced' ? 'bg-emerald-400' :
-                  isSyncingGlobal ? 'bg-blue-400 animate-pulse' : 'bg-zinc-400'
-                }`}></span>
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                  cloudSyncStatus === 'newer' ? 'bg-amber-400' :
-                  cloudSyncStatus === 'synced' ? 'bg-emerald-400' :
-                  isSyncingGlobal ? 'bg-blue-400' : 'bg-zinc-450'
-                }`}></span>
-              </span>
-              
-              <span className="font-bold text-[9px] uppercase tracking-wide text-zinc-400">Nuvem:</span>
-              
-              <span className={`font-black text-[10px] tracking-tight ${
-                cloudSyncStatus === 'newer' ? 'text-amber-300' :
-                cloudSyncStatus === 'synced' ? 'text-emerald-300' :
-                isSyncingGlobal ? 'text-blue-300 animate-pulse' : 'text-zinc-300'
-              }`}>
-                {cloudSyncStatus === 'newer' ? 'Desatualizado ⚠️' :
-                 cloudSyncStatus === 'synced' ? 'Sincronizado ✓' :
-                 isSyncingGlobal ? 'Lendo...' : 'Conectado'}
-              </span>
-
-              <button
-                onClick={() => downloadAndApplyFromCloud(false)}
-                disabled={isSyncingGlobal}
-                className="ml-1 px-2 py-0.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/20 hover:border-emerald-500/45 text-emerald-300 rounded-lg text-[9px] font-black tracking-tight uppercase cursor-pointer transition active:scale-95"
-                title="Sincronizar e baixar dados salvos pelo Celular"
-              >
-                Puxar Nuvem 🔄
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsAutoSync(prev => {
-                    const newVal = !prev;
-                    localStorage.setItem('bambuzau_auto_sync', newVal ? 'true' : 'false');
-                    setGlobalToast(newVal ? "⚡ Auto-Sincronização Ativada!" : "⏸️ Auto-Sincronização Desativada.");
-                    return newVal;
-                  });
-                }}
-                className={`px-1.5 py-0.5 border rounded-lg text-[8px] font-black tracking-tight uppercase cursor-pointer transition active:scale-95 ${
-                  isAutoSync 
-                    ? 'bg-emerald-400/20 border-emerald-500/30 text-emerald-400 font-extrabold' 
-                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-350'
-                }`}
-                title="Sincronizar celular e computador automaticamente em tempo real"
-              >
-                {isAutoSync ? 'Auto: ON 🟢' : 'Auto: OFF ⚪'}
-              </button>
-            </div>
-          )}
+          {/* Live Desktop Web Badge */}
+          <div className="flex items-center gap-2 bg-[#0C0E0D]/85 border border-[#232B27] px-3.5 py-2 rounded-xl font-sans text-xs text-zinc-300 shadow-sm" title="Seus dados são processados e armazenados localmente de forma segura e ultra-rápida no seu computador">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+            </span>
+            <span className="font-bold text-[9px] uppercase tracking-wider text-zinc-400">Ambiente:</span>
+            <strong className="text-emerald-400 text-[10.5px] font-bold">Local Web Offline</strong>
+          </div>
         </div>
 
         {/* Abstract futuristic grid lines under the header */}
@@ -2213,176 +1899,12 @@ export default function App() {
         </div>
       </div>
 
-      {/* GLOBAL UPDATE NOTIFICATION BANNER */}
-      {updateBanner && (
-        <div className="bg-gradient-to-r from-amber-600 to-amber-500 border-b border-amber-700 text-white px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg transition-all duration-300">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2.5 rounded-xl animate-bounce shrink-0">
-              <Smartphone className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-extrabold tracking-tight flex items-center gap-2">
-                🚀 Nova Atualização Disponível! <span className="bg-white text-amber-700 text-[10px] uppercase font-black px-2 py-0.5 rounded-full font-mono font-semibold">v{updateBanner.version}</span>
-              </p>
-              <p className="text-xs text-amber-50 leading-relaxed max-w-3xl mt-0.5 font-sans">
-                <strong className="text-white">Novidades:</strong> {updateBanner.releaseNotes}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
-            <button
-              onClick={() => {
-                if (updateBanner.apkUrl) {
-                  // Forçar backup automático de segurança obrigatório antes da atualização de aplicativo!
-                  try {
-                    const catalogItems = JSON.parse(localStorage.getItem('bambuzau_local_catalog_production') || '[]');
-                    const snapshot = {
-                      timestamp: Date.now(),
-                      description: `Backup de segurança obrigatório gerado antes do update para v${updateBanner.version}`,
-                      data: {
-                        clients: clients || [],
-                        printers: printers || [],
-                        orders: orders || [],
-                        filamentStocks: filamentStocks || [],
-                        expenses: expenses || [],
-                        shoppingItems: shoppingItems || [],
-                        brandConfig: brandConfig,
-                        catalogItems: catalogItems
-                      }
-                    };
-                    localStorage.setItem('bambuzau_rollback_snapshot', JSON.stringify(snapshot));
-                    console.log("Cópia de segurança para retorno automático gravada com sucesso antes da atualização!");
-                  } catch (e) {
-                    console.warn("Falha de backup de segurança:", e);
-                  }
-
-                  const rawUrl = updateBanner.apkUrl;
-                  let directUrl = rawUrl.trim();
-                  
-                  // Forçar conversão local do link do Google Drive para download totalmente direto
-                  // USANDO O ENDEREÇO DE CDN DO USERCONTENT QUE EVITA REDIRECIONAMENTO E TELA DE LOGIN NO ANDROID
-                  if (directUrl.includes('drive.google.com/file/d/')) {
-                    const match = directUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-                    if (match && match[1]) {
-                      directUrl = `https://drive.usercontent.google.com/download?id=${match[1]}&export=download&confirm=t`;
-                    }
-                  } else if (directUrl.includes('drive.google.com/open?id=') || directUrl.includes('drive.google.com/open?')) {
-                    const match = directUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-                    if (match && match[1]) {
-                      directUrl = `https://drive.usercontent.google.com/download?id=${match[1]}&export=download&confirm=t`;
-                    }
-                  } else if (directUrl.includes('dropbox.com')) {
-                    let tempUrl = directUrl;
-                    // Se o link for do Dropbox, limpa e corrige para o subdominio direto dl.dropboxusercontent.com
-                    // que inicia downloads imediatos e limpos de pacotes sem carregar o site do Dropbox.
-                    if (tempUrl.includes('www.dropbox.com')) {
-                      tempUrl = tempUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
-                    } else if (tempUrl.includes('dropbox.com') && !tempUrl.includes('dl.dropboxusercontent.com')) {
-                      tempUrl = tempUrl.replace('://dropbox.com', '://dl.dropboxusercontent.com');
-                    }
-                    
-                    if (tempUrl.includes('dl.dl.dropbox')) {
-                      tempUrl = tempUrl.replace(/dl\.dl\.dropboxusercontent\.comusercontent\.com/g, 'dl.dropboxusercontent.com');
-                    }
-
-                    if (tempUrl.includes('dl=0')) {
-                      tempUrl = tempUrl.replace('dl=0', 'dl=1');
-                    } else if (!tempUrl.includes('dl=1') && !tempUrl.includes('raw=1')) {
-                      tempUrl = tempUrl + (tempUrl.includes('?') ? '&dl=1' : '?dl=1');
-                    }
-                    directUrl = tempUrl;
-                  }
-
-                  // Notificar sobre permissões caso necessário
-                  if (rawUrl.includes('drive.google.com')) {
-                    console.log('Convertido para link direto de bypass CDN do Drive:', directUrl);
-                  }
-                  
-                  // Inicia o download usando múltiplos triggers para garantir compatibilidade máxima com Android WebViews, iframes e navegadores desktop
-                  try {
-                    const link = document.createElement('a');
-                    link.href = directUrl;
-                    link.target = '_blank';
-                    link.setAttribute('download', '');
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  } catch (e) {
-                    console.error("Erro no clique de download programático:", e);
-                  }
-
-                  // Também navega na página atual do iframe/webview como fallback robusto para interceptadores
-                  window.location.href = directUrl;
-                } else {
-                  alert('A URL de download do instalador (APK) não foi configurada.');
-                }
-              }}
-              className="w-full sm:w-auto px-5 py-2.5 bg-white text-amber-700 font-extrabold text-xs rounded-xl shadow border border-amber-200 hover:bg-amber-50 transition cursor-pointer text-center"
-            >
-              Baixar e Atualizar 📥
-            </button>
-            <button
-              onClick={() => {
-                if (updateBanner) {
-                  localStorage.setItem('bambuzau_dismissed_version', updateBanner.version);
-                  localStorage.setItem('bambuzau_dismissed_timestamp', updateBanner.timestamp.toString());
-                  localStorage.setItem('bambuzau_dismissed_time', Date.now().toString());
-                }
-                setUpdateBanner(null);
-              }}
-              className="px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 text-xs font-semibold rounded-lg transition shrink-0"
-            >
-              Depois
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* CENTRAL CLOUD SYNC ALERT BANNER (v3.3.0.4) */}
-      {cloudSyncStatus === 'newer' && !isAutoSync && (
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-500 border-b border-emerald-700 text-white px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl transition-all duration-300">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2.5 rounded-xl animate-pulse shrink-0">
-              <RefreshCw className="h-5 w-5 text-white animate-spin-slow" />
-            </div>
-            <div>
-              <p className="text-sm font-extrabold tracking-tight flex items-center gap-2">
-                🔄 Novos Dados Detectados no Celular / Nuvem!
-              </p>
-              <p className="text-xs text-emerald-50 leading-relaxed max-w-3xl mt-0.5 font-sans">
-                Seu celular salvou novas informações no estoque ou pedidos! Sincronize agora para trazer esses dados para este computador de forma segura sem recarregar a página.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
-            <button
-              onClick={() => {
-                downloadAndApplyFromCloud(false);
-              }}
-              disabled={isSyncingGlobal}
-              className="w-full sm:w-auto px-5 py-2.5 bg-white text-emerald-700 font-extrabold text-xs rounded-xl shadow border border-emerald-200 hover:bg-emerald-50 transition cursor-pointer text-center flex items-center justify-center gap-2"
-            >
-              {isSyncingGlobal ? 'Sincronizando...' : 'Sincronizar Computador Agora 📥'}
-            </button>
-            <button
-              onClick={() => {
-                setIsAutoSync(true);
-                localStorage.setItem('bambuzau_auto_sync', 'true');
-                setGlobalToast("⚡ Sincronização Automática Contínua Ativada!");
-              }}
-              className="px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 text-xs font-semibold rounded-lg transition shrink-0"
-              title="Ativa a sincronização contínua em segundo plano"
-            >
-              Ativar Auto-Sincronização ⚡
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* TWO-PANEL CONTENT OR CENTRAL CONTAINER */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 pb-28 space-y-4">
         {/* EXQUISITE NEW HEADER DE CADA PÁGINA (Título grande + Subtítulo curto + Relógio/Data ao vivo mounted) */}
         {(() => {
+          if (currentTab === 0) return null;
           const headerInfo = getTabHeader(currentTab);
           const formattedDate = currentTime.toLocaleDateString('pt-BR', { 
             weekday: 'short', 

@@ -178,13 +178,13 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
               Ateliê Live Active
             </span>
             <button
-              onClick={handleRecalculate}
-              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-black font-extrabold rounded-xl text-[11px] uppercase tracking-wider transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-lg active:scale-95"
-              id="btn_refresh_status_resumo"
-            >
-              <RefreshCw className="h-3.5 w-3.5 animate-spin-slow text-black" />
-              Sincronizar Painel
-            </button>
+               onClick={handleRecalculate}
+               className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-black font-extrabold rounded-xl text-[11px] uppercase tracking-wider transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-lg active:scale-95"
+               id="btn_refresh_status_resumo"
+             >
+               <RefreshCw className="h-3.5 w-3.5 animate-spin-slow text-black" />
+               Sincronizar Painel
+             </button>
           </div>
         </div>
 
