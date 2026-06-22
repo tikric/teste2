@@ -304,7 +304,7 @@ export default function App() {
   // Decoupler to prevent event loops between local changes and cloud downloads
   const isApplyingCloudData = useRef(false);
 
-  // Cloud database sync states (v3.3.0.4)
+  // Cloud database sync states (v3.3.0.6)
   const [isSyncingGlobal, setIsSyncingGlobal] = useState(false);
   const [isSyncingBackground, setIsSyncingBackground] = useState(false);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'newer' | 'older' | 'checking' | 'error' | 'none'>('none');
@@ -906,9 +906,9 @@ export default function App() {
   }, []);
 
   const getAppVersion = () => {
-    // Retorna a versão de produção dos arquivos web compilados (v3.3.0.4), que é a versão em execução real.
+    // Retorna a versão de produção dos arquivos web compilados (v3.3.0.6), que é a versão em execução real.
     // Isso evita alertas de atualização recorrentes de si mesmo (mismatch) quando o APK nativo está reportando 3.3.0.1.
-    return "3.3.0.4";
+    return "3.3.0.6";
   };
 
   const [updateBanner, setUpdateBanner] = useState<{ version: string; apkUrl: string; releaseNotes: string; timestamp: number } | null>(null);
@@ -1003,7 +1003,7 @@ export default function App() {
     };
   }, []);
 
-  // Core Real-Time Cloud Synchronization Engine (v3.3.0.4)
+  // Core Real-Time Cloud Synchronization Engine (v3.3.0.6)
   const downloadAndApplyFromCloud = async (silent = false) => {
     const firebaseUrl = localStorage.getItem('bambuzau_firebase_url') || 'https://bambuzau1-60868-default-rtdb.firebaseio.com/';
     const workspaceCode = localStorage.getItem('bambuzau_workspace_code') || 'principal';
@@ -1373,7 +1373,7 @@ export default function App() {
     const orderQty = order.quantity || 1;
 
     if (matchedItem) {
-      console.log(`[SYS SYNC v3.3.0.4] Catalog item matched for SKU/Name deduction: "${matchedItem.name}"`, matchedItem);
+      console.log(`[SYS SYNC v3.3.0.6] Catalog item matched for SKU/Name deduction: "${matchedItem.name}"`, matchedItem);
       
       // Multimaterial recipe deduction - Filaments
       if (matchedItem.filamentsUsed && matchedItem.filamentsUsed.length > 0) {
@@ -1626,15 +1626,26 @@ export default function App() {
       textAccent: '#C6942C',
     },
     'dark-slate': {
-      bgMain: '#111417',
-      bgCard: '#191D22',
-      borderColor: '#282F37',
-      colorPrimary: '#4A85D2',
-      colorPrimaryLight: '#699CE2',
-      colorAccent: '#A2ACB9',
-      colorText: '#F3F5F7',
-      colorMuted: '#8D939F',
-      textAccent: '#4A85D2',
+      bgMain: '#07090C',         // Deeper, richer black, great contrast with cards
+      bgCard: '#111522',         // Sleek deep charcoal-cobalt
+      borderColor: '#1D2536',    // Sleeker metallic grey borders
+      colorPrimary: '#10B981',   // Electric Emerald primary
+      colorPrimaryLight: '#34D399',
+      colorAccent: '#60A5FA',    // Soft light blue/cobalt
+      colorText: '#F9FAFB',      // Pristine clean off-white
+      colorMuted: '#9CA3AF',     // Clean mid grey
+      textAccent: '#10B981',
+    },
+    'cosmic-aurora': {
+      bgMain: '#040508',
+      bgCard: '#0B0F1F',
+      borderColor: '#1F2943',
+      colorPrimary: '#10B981',
+      colorPrimaryLight: '#34D399',
+      colorAccent: '#06B6D4',
+      colorText: '#F9FAFB',
+      colorMuted: '#8991A5',
+      textAccent: '#10B981',
     },
     'gold-royal': {
       bgMain: '#0A0907',
@@ -2072,8 +2083,8 @@ export default function App() {
                   {brandConfig.name}
                 </span>
               </h1>
-              <span className="text-[9.5px] tracking-wider bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black font-black px-2.5 py-0.5 rounded-full shadow-[0_2px_10px_rgba(16,185,129,0.3)] shrink-0 transition-all duration-350 select-none">
-                v3.3.0.4
+              <span className="text-[9.5px] tracking-wider bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black font-black px-2.5 py-0.5 rounded-full shadow-[0_2px_10px_rgba(16,185,129,0.3)] shrink-0 transition-all duration-350 select-none font-sans">
+                v3.3.0.6
               </span>
             </div>
             
@@ -2160,7 +2171,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Cloud Database Sincronização Indicator & Button (v3.3.0.4) */}
+          {/* Cloud Database Sincronização Indicator & Button (v3.3.0.6) */}
           {safeGetLocalStorageItem('bambuzau_firebase_url') && (
             <div 
               className="flex items-center gap-2 bg-[#0C0E0D]/85 border border-[#232B27] px-3 py-1.5 rounded-xl font-sans text-xs text-zinc-350 shadow-sm"
@@ -2414,7 +2425,7 @@ export default function App() {
         </div>
       )}
 
-      {/* CENTRAL CLOUD SYNC ALERT BANNER (v3.3.0.4) */}
+      {/* CENTRAL CLOUD SYNC ALERT BANNER (v3.3.0.6) */}
       {cloudSyncStatus === 'newer' && !isAutoSync && (
         <div className="bg-gradient-to-r from-emerald-600 to-teal-500 border-b border-emerald-700 text-white px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl transition-all duration-300">
           <div className="flex items-center gap-3">

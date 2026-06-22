@@ -420,7 +420,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   };
 
   const [updateVersion, setUpdateVersion] = useState(() => {
-    return localStorage.getItem('bambuzau_update_version') || '3.3.0.4';
+    return localStorage.getItem('bambuzau_update_version') || '3.3.0.6';
   });
   const [updateApkUrl, setUpdateApkUrl] = useState(() => {
     return localStorage.getItem('bambuzau_update_apk_url') || '';
@@ -775,7 +775,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
       const exportObject = {
         app_signature: 'Gestao3D_Backup',
-        version: '3.3.0.4',
+        version: '3.3.0.6',
         timestamp: Date.now(),
         clients: clients || [],
         printers: printers || [],
@@ -900,7 +900,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
       const exportObject = {
         app_signature: 'Gestao3D_Backup',
-        version: '3.3.0.4',
+        version: '3.3.0.6',
         timestamp: Date.now(),
         clients: clients || [],
         printers: printers || [],
@@ -2084,7 +2084,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             {showClipboardBackup && (
               <div className="mt-3 bg-[#0C0E0D] border border-purple-500/10 p-3.5 rounded-xl space-y-3 animate-fade-in">
                 <p className="text-[10px] text-[#8BA58D] leading-relaxed">
-                  Bypass de arquivos para Celulares e WebViews! Trata as informações do Ateliê como um bloco de texto que você copia e cola à vontade. Versão 3.3.0.4.
+                  Bypass de arquivos para Celulares e WebViews! Trata as informações do Ateliê como um bloco de texto que você copia e cola à vontade. Versão 3.3.0.6.
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -2189,10 +2189,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </div>
 
           <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
-            <div className="p-2.5 bg-[#0C0E0D] border-l-2 border-emerald-500 rounded-r-xl space-y-1 font-sans">
+            <div className="p-2.5 bg-[#0C0E0D] border-l-2 border-amber-500 rounded-r-xl space-y-1 font-sans">
               <div className="flex justify-between items-center text-[10px]">
-                <strong className="text-white text-xs font-black">Versão 3.3.0.4 (Atual)</strong>
-                <span className="text-emerald-400 font-mono font-bold">Junho/2026</span>
+                <strong className="text-white text-xs font-black">Versão 3.3.0.6 (Atual)</strong>
+                <span className="text-amber-400 font-mono font-bold">Junho/2026</span>
+              </div>
+              <ul className="list-disc pl-4 text-[10px] text-[#8BA58D] space-y-0.5 font-sans leading-relaxed">
+                <li><strong>Design de UI Premium Renovado</strong>: Layout refinado com bordas brilhantes, paleta ultra-moderna de alta densidade e o novo tema visual Aurora Cósmica embutido.</li>
+                <li><strong>Melhoria de Performance e Build</strong>: Processamentos otimizados de renderização e exportações integradas mais rápidas.</li>
+              </ul>
+            </div>
+
+            <div className="p-2.5 bg-[#0C0E0D]/85 border-l-2 border-[#2F3D35] rounded-r-xl space-y-1 font-sans opacity-85">
+              <div className="flex justify-between items-center text-[10px]">
+                <strong className="text-white text-xs font-black">Versão 3.3.0.4 (Anterior)</strong>
+                <span className="text-zinc-500 font-mono font-bold">Junho/2026</span>
               </div>
               <ul className="list-disc pl-4 text-[10px] text-[#8BA58D] space-y-0.5 font-sans leading-relaxed">
                 <li><strong>Motor de Sincronização Inteligente</strong>: Upload e download automático em tempo real no celular e computador sem recarregar a página com opção de sincronização contínua.</li>
@@ -2590,8 +2601,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           {/* DIAGNOSTIC WIDGET PANEL FOR OTA UPDATES */}
           {(() => {
             const getLocalAppVer = () => {
-              // Retorna a versão dos ativos Web ativos em execução (v3.3.0.4). Isso resolve o loop de atualizações no smartphone
-              return '3.3.0.4';
+              // Retorna a versão dos ativos Web ativos em execução (v3.3.0.6). Isso resolve o loop de atualizações no smartphone
+              return '3.3.0.6';
             };
 
             const getNativeShellVer = () => {
@@ -2822,6 +2833,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 id="branding_theme_select"
               >
                 {aiColors && <option value="custom">✨ Paleta Gerada por IA (Logotipo) ✨</option>}
+                <option value="cosmic-aurora">🌌 Aurora Cósmica (Esmeralda, Ciano & Âmbar Premium)</option>
                 <option value="dark-organic">Natural Escuro (Sálvia & Ouro)</option>
                 <option value="light-bambu">Nativo Claro (Areia & Verde Folha)</option>
                 <option value="dark-slate">Grafite Escovado (Cobalto & Cinza Escuro)</option>
