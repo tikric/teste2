@@ -43,7 +43,13 @@ jobs:
 
       - name: Install Node dependencies and Compile Web app
         run: |
-          npm ci --prefer-offline
+          if [ -f package-lock.json ]; then
+            echo "package-lock.json found. Running npm ci..."
+            npm ci --prefer-offline
+          else
+            echo "package-lock.json not found! Falling back to npm install..."
+            npm install --prefer-offline
+          fi
           npm run build
         env:
           NODE_ENV: production
