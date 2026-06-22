@@ -138,9 +138,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         console.error('Error loading local catalog', e);
       }
 
+      const uploadTs = Date.now();
       // Compile current state payload
       const payload = {
-        updatedAt: Date.now(),
+        updatedAt: uploadTs,
         clients: clients || [],
         printers: printers || [],
         orders: orders || [],
@@ -181,6 +182,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       
       const nowStr = new Date().toLocaleString('pt-BR');
       localStorage.setItem('bambuzau_last_sync_time', nowStr);
+      localStorage.setItem('bambuzau_last_local_update_time', uploadTs.toString());
       setLastSyncTime(nowStr);
 
       showSuccess('Sincronização concluída com sucesso! Os dados foram enviados para a Nuvem Firebase.');
@@ -275,6 +277,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
       const nowStr = new Date().toLocaleString('pt-BR');
       localStorage.setItem('bambuzau_last_sync_time', nowStr);
+      localStorage.setItem('bambuzau_last_local_update_time', (data.updatedAt || Date.now()).toString());
       setLastSyncTime(nowStr);
 
       showSuccess('Banco de dados resgatado com sucesso! O aplicativo será recarregado em instantes para aplicar...');

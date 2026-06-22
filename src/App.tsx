@@ -301,12 +301,22 @@ export default function App() {
   const [dismissedPriceAlert, setDismissedPriceAlert] = useState(false);
   const [dismissedStockAlert, setDismissedStockAlert] = useState(false);
 
+  // Decoupler to prevent event loops between local changes and cloud downloads
+  const isApplyingCloudData = useRef(false);
+
   // Cloud database sync states (v3.3.0.4)
   const [isSyncingGlobal, setIsSyncingGlobal] = useState(false);
   const [isSyncingBackground, setIsSyncingBackground] = useState(false);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'newer' | 'older' | 'checking' | 'error' | 'none'>('none');
   const [lastSyncTime, setLastSyncTime] = useState(() => safeGetLocalStorageItem('bambuzau_last_sync_time') || '');
-  const [isAutoSync, setIsAutoSync] = useState(() => safeGetLocalStorageItem('bambuzau_auto_sync') === 'true');
+  const [isAutoSync, setIsAutoSync] = useState(() => {
+    try {
+      const saved = localStorage.getItem('bambuzau_auto_sync');
+      return saved === null ? true : saved === 'true'; // Default to true if not set
+    } catch (e) {
+      return true;
+    }
+  });
 
   // Check if we are in public showcase view
   const [isShowcase, setIsShowcase] = useState(() => {
@@ -1029,6 +1039,9 @@ export default function App() {
         throw new Error(`Workspace vazio ou inexistente.`);
       }
 
+      // Mark that we are applying remote cloud database state updates
+      isApplyingCloudData.current = true;
+
       // Hot-apply all states to avoid total page refresh
       if (data.clients) setClients(data.clients);
       if (data.printers) setPrinters(data.printers);
@@ -1070,8 +1083,15 @@ export default function App() {
       setCloudSyncStatus('synced');
 
       setGlobalToast("✨ Sincronização em Nuvem concluída e aplicada!");
+
+      // Wait slightly for state hooks and batch rendering to resolve
+      setTimeout(() => {
+        isApplyingCloudData.current = false;
+      }, 500);
+
     } catch (e: any) {
       console.warn("Cloud sync down failure", e);
+      isApplyingCloudData.current = false;
       if (!silent) {
         setGlobalToast(`❌ Falha ao resgatar dados: ${e.message}`);
       }
@@ -1108,8 +1128,9 @@ export default function App() {
     }
 
     try {
+      const uploadTs = Date.now();
       const payload = {
-        updatedAt: Date.now(),
+        updatedAt: uploadTs,
         clients: clients || [],
         printers: printers || [],
         orders: orders || [],
@@ -1142,6 +1163,8 @@ export default function App() {
       if (response.ok) {
         const nowStr = new Date().toLocaleString('pt-BR');
         localStorage.setItem('bambuzau_last_sync_time', nowStr);
+        // Align local update time with the exact payload timestamp we just successfully saved
+        localStorage.setItem('bambuzau_last_local_update_time', uploadTs.toString());
         setLastSyncTime(nowStr);
         setCloudSyncStatus('synced');
         if (forceManual) {
@@ -1171,6 +1194,11 @@ export default function App() {
   useEffect(() => {
     if (isFirstMount.current) {
       isFirstMount.current = false;
+      return;
+    }
+
+    if (isApplyingCloudData.current) {
+      // Ignore modifications triggered by downloaded cloud database injection
       return;
     }
 
