@@ -1,0 +1,6 @@
+{
+  "name": "Gestao 3d",
+  "description": "Gerenciador profissional completo de produção, clientes, estoque de filamento, impressoras online e precificação para Gestao 3d.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

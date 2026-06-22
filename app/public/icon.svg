@@ -1,0 +1,108 @@
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient (Very dark metallic blue/charcoal) -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" stop-color="#192330" />
+      <stop offset="100%" stop-color="#090d13" />
+    </radialGradient>
+
+    <!-- Metallic Blue Gradient for the G-shaped Printer Frame -->
+    <linearGradient id="gFrameGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d2ff" />
+      <stop offset="50%" stop-color="#0066ff" />
+      <stop offset="100%" stop-color="#0033aa" />
+    </linearGradient>
+
+    <!-- Filament and Glowing Accents -->
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+
+    <filter id="glowEffect" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Rounded Squircle Background matching the PWA icon layout -->
+  <rect x="16" y="16" width="480" height="480" rx="100" fill="url(#bgGrad)" stroke="#1e293b" stroke-width="4" />
+
+  <!-- The stylized "G" 3D printer frame -->
+  <path d="M 160 300 
+           L 160 170 
+           C 160 100, 240 80, 290 80 
+           C 330 80, 360 100, 360 120 
+           L 320 145 
+           C 300 135, 270 130, 250 130 
+           C 210 130, 210 170, 210 170 
+           L 210 300 
+           C 210 320, 230 340, 250 340 
+           L 320 340 
+           L 320 250 
+           L 270 250 
+           L 270 210 
+           L 360 210 
+           L 360 350 
+           C 360 380, 320 380, 290 380 
+           C 250 380, 160 380, 160 300 Z" 
+        fill="url(#gFrameGrad)" 
+        stroke="#475569" 
+        stroke-width="2" />
+
+  <!-- 3D Printer Nozzle / Gantry head -->
+  <rect x="238" y="165" width="36" height="24" rx="4" fill="#64748b" />
+  <rect x="246" y="189" width="20" height="10" fill="#334155" />
+  <!-- Extruder Tip -->
+  <path d="M 251 199 L 261 199 L 256 208 Z" fill="#e2e8f0" />
+  <!-- Heating block glowing line -->
+  <line x1="248" y1="192" x2="264" y2="192" stroke="#4db8ff" stroke-width="2.5" filter="url(#glowEffect)" />
+
+  <!-- Active printed 3D letters block under nozzle -->
+  <!-- "3" Letter Solid geometry -->
+  <path d="M 215 265 
+           C 235 265, 240 250, 240 240 
+           C 240 230, 230 225, 220 225 
+           L 215 225 L 215 210 
+           L 225 210 
+           C 235 210, 243 200, 243 190 
+           C 243 180, 235 175, 215 175 
+           L 190 175 L 190 195 
+           L 210 195 
+           C 218 195, 218 200, 215 200 
+           L 195 200 L 195 220 
+           L 215 220 
+           C 218 220, 218 225, 212 225 
+           L 190 225 L 190 245 
+           L 210 245 L 215 265 Z" 
+        fill="#00e5ff" 
+        filter="url(#glowEffect)" />
+
+  <!-- "D" Letter Solid geometry -->
+  <path d="M 270 175 
+           L 270 245 
+           L 295 245 
+           C 315 245, 325 230, 325 210 
+           C 325 190, 315 175, 295 175 
+           H 270 Z 
+           M 290 195 
+           C 298 195, 298 225, 290 225 
+           H 282 L 282 195 
+           H 290 Z" 
+        fill="#0099ff" 
+        filter="url(#glowEffect)" />
+
+  <!-- Laser Print Level Indicator line under the nozzle -->
+  <line x1="180" y1="205" x2="332" y2="205" stroke="#00ffff" stroke-dasharray="4 2" stroke-width="1.5" opacity="0.8" filter="url(#glowEffect)" />
+
+  <!-- Metal printing build plate matching the 3D layout -->
+  <polygon points="120,380 392,380 352,420 160,420" fill="#334155" stroke="#475569" stroke-width="3" />
+  <polygon points="124,382 388,382 350,418 162,418" fill="#1e293b" />
+
+  <!-- Futuristic Text "GESTAO 3D" at bottom -->
+  <text x="50%" y="450" text-anchor="middle" font-family="'Inter', 'Space Grotesk', system-ui, sans-serif" font-weight="900" font-size="28" fill="#ffffff" letter-spacing="4">GESTAO 3D</text>
+
+  <!-- Glowing filament spool silhouette on the side back -->
+  <circle cx="150" cy="140" r="35" stroke="#00d2ff" stroke-width="8" opacity="0.25" filter="url(#glowEffect)" />
+  <circle cx="150" cy="140" r="15" stroke="#475569" stroke-width="3" opacity="0.3" />
+</svg>

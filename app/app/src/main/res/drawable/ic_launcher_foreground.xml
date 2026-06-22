@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <!-- Glowing background accent spool representation -->
+    <path
+        android:pathData="M 150,105 C 130.67,105 115,120.67 115,140 C 115,159.33 130.67,175 150,175 C 169.33,175 185,159.33 185,140 C 185,120.67 169.33,105 150,105 Z M 150,113 C 164.91,113 177,125.09 177,140 C 177,154.91 164.91,167 150,167 C 135.09,167 123,154.91 123,140 C 123,125.09 135.09,113 150,113 Z"
+        android:fillColor="#2200e5ff"/>
+
+    <!-- G-shaped Frame (Deep high-tech blue) -->
+    <path
+        android:pathData="M 160,300 L 160,170 C 160,100 240,80 290,80 C 330,80 360,100 360,120 L 320,145 C 300,135 270,130 250,130 C 210,130 210,170 210,170 L 210,300 C 210,320 230,340 250,340 L 320,340 L 320,250 L 270,250 L 270,210 L 360,210 L 360,350 C 360,380 320,380 290,380 C 250,380 160,380 160,300 Z"
+        android:fillColor="#0066ff"/>
+
+    <!-- 3D Printer Nozzle gantry head -->
+    <path
+        android:pathData="M 238,165 h 36 v 24 h -36 Z"
+        android:fillColor="#64748b" />
+    <path
+        android:pathData="M 246,189 h 20 v 10 h -20 Z"
+        android:fillColor="#334155" />
+    <!-- Extruder tip -->
+    <path
+        android:pathData="M 251,199 L 261,199 L 256,208 Z"
+        android:fillColor="#e2e8f0" />
+
+    <!-- Active printed letter 3 -->
+    <path
+        android:pathData="M 215,265 C 235,265 240,250 240,240 C 240,230 230,225 220,225 L 215,225 L 215,210 L 225,210 C 235,210 243,200 243,190 C 243,180 235,175 215,175 L 190,175 L 190,195 L 210,195 C 218,195 218,200 215,200 L 195,200 L 195,220 L 215,220 C 218,220 218,225 212,225 L 190,225 L 190,245 L 210,245 L 215,265 Z"
+        android:fillColor="#00e5ff" />
+
+    <!-- Active printed letter D -->
+    <path
+        android:pathData="M 270,175 L 270,245 L 295,245 C 315,245 325,230 325,210 C 325,190 315,175 295,175 H 270 Z M 290,195 C 298,195 298,225 290,225 H 282 L 282,195 H 290 Z"
+        android:fillColor="#00a2ff" />
+
+    <!-- Laser indicator line under nozzle -->
+    <path
+        android:pathData="M 180,205 H 332"
+        android:strokeColor="#00ffff"
+        android:strokeWidth="1.5" />
+</vector>

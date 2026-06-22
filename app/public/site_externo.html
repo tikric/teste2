@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo Virtual do Ateliê 3D</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0A0D0B;
+      color: #F7F5F0;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0C0E0D;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #232B27;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col custom-scroll">
+
+  <!-- TOP BRAND BANNER -->
+  <header class="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-[#222A25] px-4 py-4">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center font-black text-[#0A0D0B] shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+          3D
+        </div>
+        <div>
+          <h1 id="shop-name" class="text-sm font-extrabold text-white tracking-tight">Ateliê 3D Premium</h1>
+          <p class="text-[10px] text-[#899E8F] uppercase font-mono tracking-wider">Catálogo Digital de Impressão</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Cart Trigger Button -->
+        <button id="btn-cart-toggle" onclick="toggleCart()" class="relative px-3 py-2 bg-[#141B18] hover:bg-[#222D29] border border-[#222A25] rounded-xl text-xs font-semibold text-[#899E8F] hover:text-white transition flex items-center gap-1.5 cursor-pointer">
+          🛒 Sacola
+          <span id="cart-badge" class="hidden bg-emerald-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- INFO HUB -->
+  <div class="bg-gradient-to-b from-black/50 to-transparent py-4 px-4">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-[#111613] border border-[#222A25]/50 px-4 py-3 rounded-2xl">
+      <div>
+        <p class="text-xs text-[#899E8F] leading-relaxed">
+          👋 Seja bem-vindo ao nosso catálogo! Escolha as peças abaixo, personalize com a cor de sua preferência, e finalize enviando seu pedido de cotação diretamente para o nosso WhatsApp.
+        </p>
+      </div>
+      <div class="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg shrink-0">
+        ● Sincronizado com o Ateliê
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CATALOG CONTAINER -->
+  <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+    <!-- SEARCH & FILTER ROW -->
+    <div class="flex flex-col sm:flex-row gap-3">
+      <div class="relative flex-1">
+        <input 
+          type="text" 
+          id="search-input" 
+          onkeyup="filterProducts()" 
+          placeholder="Pesquisar produto pelo nome..." 
+          class="w-full bg-[#111613] border border-[#222A25] rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-600 outline-none focus:border-emerald-500/60 transition"
+        >
+      </div>
+
+      <div class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none shrink-0" id="filter-wrapper">
+        <button onclick="selectMaterial('ALL')" id="filter-all" class="px-3.5 py-2 rounded-xl text-xs font-bold border bg-emerald-500/10 border-emerald-500/40 text-emerald-400 transition cursor-pointer">
+          Todos
+        </button>
+        <button onclick="selectMaterial('PLA')" id="filter-pla" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-[#222A25] text-[#899E8F] hover:bg-[#111613] transition cursor-pointer">
+          PLA
+        </button>
+        <button onclick="selectMaterial('PETG')" id="filter-petg" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-[#222A25] text-[#899E8F] hover:bg-[#111613] transition cursor-pointer">
+          PETG
+        </button>
+        <button onclick="selectMaterial('ABS')" id="filter-abs" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-[#222A25] text-[#899E8F] hover:bg-[#111613] transition cursor-pointer">
+          ABS
+        </button>
+        <button onclick="selectMaterial('TPU')" id="filter-tpu" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-[#222A25] text-[#899E8F] hover:bg-[#111613] transition cursor-pointer">
+          TPU
+        </button>
+      </div>
+    </div>
+
+    <!-- PRODUCTS GRID -->
+    <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Generated dynamically -->
+    </div>
+
+    <!-- EMPTY PLACEHOLDER -->
+    <div id="empty-state" class="hidden py-16 text-center space-y-2">
+      <div class="text-3xl">📭</div>
+      <p class="text-sm font-semibold text-zinc-400" id="empty-title">Nenhum produto correspondente encontrado.</p>
+      <p class="text-xs text-zinc-600" id="empty-desc">Por favor, altere sua pesquisa ou categoria de material.</p>
+    </div>
+
+  </main>
+
+  <!-- DIALOG / PRODUCT CUSTOMIZATION MODAL -->
+  <div id="product-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#111613] border border-[#222A25] rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scroll p-6 space-y-5">
+      
+      <!-- Modal Header -->
+      <div class="flex justify-between items-start gap-4">
+        <div>
+          <span id="modal-material" class="text-[9px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded">PLA</span>
+          <h2 id="modal-title" class="text-base font-extrabold text-white mt-1">Vaso Espiral Deco</h2>
+        </div>
+        <button onclick="closeProductModal()" class="p-1.5 hover:bg-[#222D29] border border-[#222A25] rounded-xl text-[#899E8F] hover:text-white transition cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Preview Image -->
+      <img id="modal-image" src="" alt="" class="w-full h-44 object-cover rounded-2xl border border-[#222A25] shadow-inner bg-black">
+
+      <!-- Description -->
+      <p id="modal-desc" class="text-xs text-[#899E8F] leading-relaxed">Suplementação de design exclusivo e alta resistência.</p>
+
+      <!-- Custom Options Form -->
+      <div class="space-y-3 pt-2">
+        <label class="block text-[10px] text-emerald-400 uppercase font-mono font-bold">1. Selecione a Cor do Filamento</label>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-2" id="color-selectors-container">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <div class="space-y-1.5 pt-1.5">
+          <label class="block text-[10px] text-emerald-400 uppercase font-mono font-bold">2. Observações ou Medidas Especiais</label>
+          <textarea 
+            id="modal-note-input" 
+            placeholder="Ex: Escalonar peça para 120%, ou detalhar nome para gravação no corpo da peça."
+            class="w-full bg-[#0C0E0D] border border-[#222A25] rounded-xl p-2.5 text-xs text-white placeholder-zinc-700 outline-none focus:border-emerald-500/50 h-16 resize-none"
+          ></textarea>
+        </div>
+
+        <!-- Price and quantity row -->
+        <div class="border-t border-[#222A25] pt-4 flex justify-between items-center bg-[#151C18]/30 -mx-6 px-6 pb-2">
+          <div>
+            <span class="text-[9px] text-[#899E8F] uppercase block font-mono">Valor Unitário</span>
+            <span id="modal-price" class="text-base font-black text-emerald-400 font-mono">R$ 49,90</span>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div class="flex items-center border border-[#222A25] rounded-xl bg-[#090C0A]">
+              <button onclick="adjustModalQty(-1)" class="px-3 py-1 font-extrabold text-[#899E8F] hover:text-white font-mono cursor-pointer">-</button>
+              <span id="modal-qty-display" class="px-3 font-bold text-white text-xs font-mono">1</span>
+              <button onclick="adjustModalQty(1)" class="px-3 py-1 font-extrabold text-[#899E8F] hover:text-white font-mono cursor-pointer">+</button>
+            </div>
+
+            <button onclick="addProductToCart()" class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-[#0C0E0D] font-extrabold text-xs rounded-xl transition cursor-pointer select-none">
+              Adicionar 🛒
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SHOPPING BAG / CART PANEL SIDEBAR -->
+  <div id="cart-panel" class="fixed inset-y-0 right-0 max-w-md w-full bg-[#111613] border-l border-[#222A25] z-50 hidden flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+    <!-- Cart Header -->
+    <div class="p-5 border-b border-[#222A25] flex justify-between items-center">
+      <h3 class="text-sm font-extrabold text-white flex items-center gap-2">
+        <span>🛒</span> Sua Sacola de Compras
+      </h3>
+      <button onclick="toggleCart()" class="p-1.5 hover:bg-[#222D29] border border-[#222A25] rounded-xl text-[#899E8F] hover:text-white transition cursor-pointer">
+        ✕
+      </button>
+    </div>
+
+    <!-- Cart Items list -->
+    <div id="cart-items" class="flex-1 overflow-y-auto custom-scroll p-4 space-y-3.5">
+      <!-- Populated dynamically -->
+    </div>
+
+    <!-- Cart Footer & Checkout Form -->
+    <div id="cart-checkout" class="p-5 border-t border-[#222A25] bg-[#0C0F0D] space-y-4">
+      <div class="flex justify-between items-baseline">
+        <span class="text-xs font-bold text-[#899E8F]">Total Estimado:</span>
+        <span id="cart-total" class="text-base font-black text-emerald-400 font-mono">R$ 0,00</span>
+      </div>
+
+      <!-- User Checkout info -->
+      <div class="space-y-2.5 pt-1.5">
+        <div class="space-y-0.5">
+          <label class="text-[9px] uppercase font-mono font-bold text-[#899E8F]">Seu Nome Completo</label>
+          <input 
+            type="text" 
+            id="cust-name" 
+            placeholder="Ex: João da Silva" 
+            class="w-full bg-[#151C18] border border-[#222A25] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500/50"
+          >
+        </div>
+
+        <div class="space-y-0.5">
+          <label class="text-[9px] uppercase font-mono font-bold text-[#899E8F]">Endereço Completo de Entrega</label>
+          <input 
+            type="text" 
+            id="cust-address" 
+            placeholder="Ex: Rua das Américas, 432 - Bairro Centro" 
+            class="w-full bg-[#151C18] border border-[#222A25] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500/50"
+          >
+        </div>
+      </div>
+
+      <button onclick="submitOrder()" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_4px_12px_rgba(16,185,129,0.2)]">
+        Concluir &amp; Enviar no WhatsApp 💬
+      </button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="py-10 border-t border-[#222A25] bg-[#050706] text-center space-y-2 px-4 mt-12">
+    <p class="text-xs text-[#899E8F]">&copy; 2026 - Conexão de Vendas Diretas do Ateliê 3D</p>
+    <p class="text-[10px] text-zinc-600">Catálogo virtual gerado automaticamente de forma independente - Gestão 3D Professional.</p>
+  </footer>
+
+  <!-- CORE LOGIC ENGINE -->
+  <script>
+    // Colors
+    const availableColors = [
+      { name: 'Preto Carbono', hex: '#1C1C1C' },
+      { name: 'Branco Cerâmico', hex: '#F0F0F5' },
+      { name: 'Ouro Silk Metálico', hex: '#D4AF37' },
+      { name: 'Azul Translúcido', hex: '#2A82E4' },
+      { name: 'Cinza Espacial', hex: '#63706F' },
+      { name: 'Cobre Metálico', hex: '#C87533' }
+    ];
+
+    let products = [];
+    let cart = [];
+    let activeMaterial = 'ALL';
+    
+    // Loaded product currently in customization modal
+    let activeProduct = null;
+    let selectedColor = 'Preto Carbono';
+    let modalQty = 1;
+
+    // Initialize Page
+    window.addEventListener('load', () => {
+      // Load products stored in local storage from main app
+      try {
+        const rawAppCatalog = localStorage.getItem('bambuzau_local_catalog_production');
+        if (rawAppCatalog) {
+          const parsed = JSON.parse(rawAppCatalog);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            products = parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("Could not fetch local App catalog storage.", e);
+      }
+
+      if (!products || products.length === 0) {
+        products = [];
+      }
+
+      // Load Whatsapp config
+      const savedWhatsapp = localStorage.getItem('bambuzau_catalog_whatsapp') || '';
+      
+      // Update store name header if present in local state
+      try {
+        const rawBrand = localStorage.getItem('bambuzau_brand_config');
+        if (rawBrand) {
+          const pb = JSON.parse(rawBrand);
+          if (pb.name) {
+            document.getElementById('shop-name').textContent = pb.name;
+          }
+        }
+      } catch(ex){}
+
+      renderProducts();
+    });
+
+    // Render Grid
+    function renderProducts() {
+      const grid = document.getElementById('products-grid');
+      const emptyState = document.getElementById('empty-state');
+      grid.innerHTML = '';
+
+      const query = document.getElementById('search-input').value.toLowerCase().trim();
+      
+      if (!products || products.length === 0) {
+        document.getElementById('empty-title').textContent = "Nenhum produto cadastrado no catálogo ainda.";
+        document.getElementById('empty-desc').textContent = "Por favor, cadastre produtos na aba de Banco de Dados ou sincronize o seu Ateliê.";
+        emptyState.classList.remove('hidden');
+        grid.classList.add('hidden');
+        return;
+      }
+
+      const filtered = products.filter(p => {
+        const matchMat = (activeMaterial === 'ALL' || p.filamentType === activeMaterial);
+        const matchSearch = p.name.toLowerCase().includes(query) || p.description.toLowerCase().includes(query);
+        return matchMat && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        document.getElementById('empty-title').textContent = "Nenhum produto correspondente encontrado.";
+        document.getElementById('empty-desc').textContent = "Por favor, altere sua pesquisa ou categoria de material.";
+        emptyState.classList.remove('hidden');
+        grid.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      grid.classList.remove('hidden');
+
+      filtered.forEach(p => {
+        const card = document.createElement('div');
+        card.className = "bg-[#141B18] border border-[#222A25] rounded-3xl overflow-hidden hover:border-[#4B5E51] transition-all duration-300 flex flex-col justify-between";
+        
+        let imgUrl = p.imageUrl || p.photoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&auto=format&fit=crop&q=60';
+        
+        card.innerHTML = `
+          <div>
+            <div class="relative">
+              <img src="${imgUrl}" alt="${p.name}" class="w-full h-48 object-cover border-b border-[#222A25]/90 bg-neutral-900">
+              <span class="absolute top-3 left-3 text-[9px] uppercase font-mono font-extrabold tracking-wider px-2 py-0.5 bg-emerald-500 text-black rounded-lg">
+                ${p.filamentType || 'PLA'}
+              </span>
+            </div>
+            <div class="p-4 space-y-2">
+              <h3 class="text-xs font-extrabold text-white leading-tight">${p.name}</h3>
+              <p class="text-[10.5px] text-[#899E8F] line-clamp-2 leading-relaxed">${p.description || 'Nenhum detalhe adicional fornecido.'}</p>
+            </div>
+          </div>
+          <div class="p-4 pt-0 flex justify-between items-center border-t border-[#222A25]/30 mt-3">
+            <div>
+              <span class="text-[9px] text-[#899E8F]/80 uppercase block font-mono">Preço</span>
+              <span class="text-xs font-extrabold text-emerald-400 font-mono">R$ ${(p.priceCharged || 0).toFixed(2)}</span>
+            </div>
+            <button onclick="openProductModal(${p.id})" class="px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-black font-extrabold text-[10.5px] rounded-xl transition cursor-pointer select-none border border-emerald-500/20">
+              Ver Opções ⚡
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Material Filtering Controls
+    function selectMaterial(mat) {
+      activeMaterial = mat;
+      
+      // Update buttons style
+      ['ALL', 'PLA', 'PETG', 'ABS', 'TPU'].forEach(m => {
+        const btn = document.getElementById(`filter-${m.toLowerCase()}`);
+        if (btn) {
+          if (m === mat) {
+            btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold border bg-emerald-500/10 border-emerald-500/40 text-emerald-400 transition cursor-pointer";
+          } else {
+            btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold border border-[#222A25] text-[#899E8F] hover:bg-[#111613] transition cursor-pointer";
+          }
+        }
+      });
+
+      renderProducts();
+    }
+
+    // Filter by text search
+    function filterProducts() {
+      renderProducts();
+    }
+
+    // Open Customization Modal
+    function openProductModal(prodId) {
+      activeProduct = products.find(p => p.id === prodId);
+      if (!activeProduct) return;
+
+      document.getElementById('modal-material').textContent = activeProduct.filamentType || 'PLA';
+      document.getElementById('modal-title').textContent = activeProduct.name;
+      document.getElementById('modal-desc').textContent = activeProduct.description || 'Peça impressa sob demanda.';
+      
+      let imgUrl = activeProduct.photoUrl || 'https://images.unsplash.com/photo-1608156639585-b3a032ef9689?w=300&auto=format&fit=crop&q=60';
+      document.getElementById('modal-image').src = imgUrl;
+      document.getElementById('modal-price').textContent = `R$ ${(activeProduct.priceCharged || 0).toFixed(2)}`;
+
+      // Setup colors colors list inside container
+      const colorsContainer = document.getElementById('color-selectors-container');
+      colorsContainer.innerHTML = '';
+      
+      selectedColor = availableColors[0].name;
+      
+      availableColors.forEach((col, idx) => {
+        const btn = document.createElement('button');
+        btn.id = `col-btn-${idx}`;
+        btn.onclick = () => selectColor(col.name, idx);
+        btn.className = `p-2 rounded-xl border flex items-center gap-1.5 transition text-[10.5px] cursor-pointer ${
+          idx === 0 ? 'bg-emerald-500/10 border-emerald-500 text-white font-bold' : 'bg-black border-[#222A25] text-[#899E8F]'
+        }`;
+        
+        btn.innerHTML = `
+          <span class="w-3.5 h-3.5 rounded-full border border-black" style="background-color: ${col.hex}"></span>
+          <span>${col.name}</span>
+        `;
+        colorsContainer.appendChild(btn);
+      });
+
+      // Clear textarea note
+      document.getElementById('modal-note-input').value = '';
+      
+      // Reset qty
+      modalQty = 1;
+      document.getElementById('modal-qty-display').textContent = modalQty;
+
+      // Unhide Modal
+      document.getElementById('product-modal').classList.remove('hidden');
+    }
+
+    function selectColor(colorName, index) {
+      selectedColor = colorName;
+      // Remap color selected styles
+      availableColors.forEach((_, idx) => {
+        const btn = document.getElementById(`col-btn-${idx}`);
+        if (btn) {
+          if (idx === index) {
+            btn.className = "p-2 rounded-xl border flex items-center gap-1.5 bg-emerald-500/10 border-emerald-500 text-white font-bold transition text-[10.5px] cursor-pointer";
+          } else {
+            btn.className = "p-2 rounded-xl border flex items-center gap-1.5 bg-black border-[#222A25] text-[#899E8F] transition text-[10.5px] cursor-pointer";
+          }
+        }
+      });
+    }
+
+    function adjustModalQty(delta) {
+      modalQty = Math.max(1, modalQty + delta);
+      document.getElementById('modal-qty-display').textContent = modalQty;
+    }
+
+    function closeProductModal() {
+      document.getElementById('product-modal').classList.add('hidden');
+    }
+
+    // Add Customize Item to Shopping Bag
+    function addProductToCart() {
+      if (!activeProduct) return;
+      const noteInput = document.getElementById('modal-note-input').value.trim();
+
+      const item = {
+        product: activeProduct,
+        quantity: modalQty,
+        chosenColor: selectedColor,
+        customNote: noteInput
+      };
+
+      cart.push(item);
+      updateCartUI();
+      closeProductModal();
+
+      // Pulse Bag badge
+      const btn = document.getElementById('btn-cart-toggle');
+      btn.classList.add('scale-105', 'bg-emerald-500/20');
+      setTimeout(() => btn.classList.remove('scale-105', 'bg-emerald-500/20'), 300);
+    }
+
+    // Update Cart bag counter and calculation summary
+    function updateCartUI() {
+      const badge = document.getElementById('cart-badge');
+      const itemsContainer = document.getElementById('cart-items');
+      const totalDisplay = document.getElementById('cart-total');
+
+      if (cart.length === 0) {
+        badge.classList.add('hidden');
+        badge.textContent = '0';
+        itemsContainer.innerHTML = `
+          <div class="py-12 text-center text-zinc-600 space-y-1.5">
+            <span class="text-2xl">🛍️</span>
+            <p class="text-xs">Sua sacola está vazia no momento.</p>
+          </div>
+        `;
+        totalDisplay.textContent = 'R$ 0,00';
+        return;
+      }
+
+      badge.classList.remove('hidden');
+      badge.textContent = cart.reduce((acc, curr) => acc + curr.quantity, 0);
+
+      itemsContainer.innerHTML = '';
+      let sum = 0;
+
+      cart.forEach((c, idx) => {
+        const itemSum = c.product.priceCharged * c.quantity;
+        sum += itemSum;
+
+        const div = document.createElement('div');
+        div.className = "p-3 bg-black/40 border border-[#222A25] rounded-2xl space-y-1 relative";
+        
+        div.innerHTML = `
+          <div class="flex justify-between items-start pr-6">
+            <div>
+              <h4 class="text-xs font-bold text-white line-clamp-1">${c.product.name}</h4>
+              <p class="text-[10px] text-zinc-500 font-mono">Cor: <span class="text-[#899E8F] font-bold">${c.chosenColor}</span></p>
+            </div>
+            <button onclick="removeFromCart(${idx})" class="absolute top-2 right-2.5 text-zinc-600 hover:text-red-400 p-1 transition cursor-pointer">
+              ✕
+            </button>
+          </div>
+
+          ${c.customNote ? `<p class="p-1 px-2 border-l border-zinc-700 bg-[#121614] rounded text-[10px] italic text-[#899E8F] mt-1 text-slate-400">Obs: "${c.customNote}"</p>` : ''}
+
+          <div class="flex justify-between items-center border-t border-[#222A25]/35 pt-2 mt-2">
+            <div class="flex items-center gap-1 font-mono text-[10px] text-zinc-500">
+              <span>Qty: ${c.quantity} un</span>
+            </div>
+            <span class="text-xs font-bold text-emerald-400 font-mono">R$ ${itemSum.toFixed(2)}</span>
+          </div>
+        `;
+
+        itemsContainer.appendChild(div);
+      });
+
+      totalDisplay.textContent = `R$ ${sum.toFixed(2)}`;
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCartUI();
+    }
+
+    function toggleCart() {
+      const panel = document.getElementById('cart-panel');
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        panel.classList.add('flex');
+      } else {
+        panel.classList.add('hidden');
+        panel.classList.remove('flex');
+      }
+    }
+
+    // Submit detailed checkout form to WhatsApp
+    function submitOrder() {
+      if (cart.length === 0) {
+        alert('Sua sacola de compras está vazia! Adicione produtos antes.');
+        return;
+      }
+
+      const clientName = document.getElementById('cust-name').value.trim();
+      const clientAddress = document.getElementById('cust-address').value.trim();
+
+      if (!clientName) {
+        alert('Por favor, informe seu Nome Completo para identificarmos seu pedido na chegada!');
+        return;
+      }
+
+      // Gather WhatsApp phone from seller configuration
+      const dddPhone = localStorage.getItem('bambuzau_catalog_whatsapp') || '';
+      if (!dddPhone) {
+        alert('Atenção: O ateliê ainda não configurou um WhatsApp de recebimento. Por favor, avise o dono do ateliê para inserir seu telefone no painel de Gestão 3D!');
+        return;
+      }
+
+      // Build Message string
+      let text = `📦 *NOVO PEDIDO DO ATELIÊ 3D*\n\n`;
+      text += `*Cliente:* ${clientName}\n`;
+      if (clientAddress) {
+        text += `*Endereço:* ${clientAddress}\n`;
+      }
+      text += `\n*ITENS SOLICITADOS:*\n`;
+
+      let total = 0;
+      cart.forEach((c, idx) => {
+        const itemSum = c.product.priceCharged * c.quantity;
+        total += itemSum;
+        text += `${idx + 1}. *${c.product.name}* (Material: ${c.product.filamentType || 'PLA'})\n`;
+        text += `  • Qtd: ${c.quantity} un | Cor: ${c.chosenColor}\n`;
+        if (c.customNote) {
+          text += `  • Obs: "${c.customNote}"\n`;
+        }
+        text += `  • Valor: R$ ${itemSum.toFixed(2)}\n\n`;
+      });
+
+      text += `*TOTAL ESTIMADO:* R$ ${total.toFixed(2)}\n\n`;
+      text += `⚡ _Este pedido de cotação foi formulado por completo através do Catálogo Digital Externo da Gestão 3D._`;
+
+      // Open WhatsApp API
+      const formatPhone = dddPhone.trim().replace(/\D/g, '');
+      const encodedText = encodeURIComponent(text);
+      const url = `https://api.whatsapp.com/send?phone=${formatPhone}&text=${encodedText}`;
+
+      window.open(url, '_blank');
+      
+      // Clear Cart and trigger success feedback
+      cart = [];
+      updateCartUI();
+      toggleCart();
+      alert('Pedido formulado com êxito! Redirecionando você para o WhatsApp do Ateliê para validar seu pedido de cotação.');
+    }
+  </script>
+</body>
+</html>

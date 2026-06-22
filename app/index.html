@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestão 3D</title>
+    
+    <!-- PWA Manifest & Colors -->
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="theme-color" content="#637E55" />
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="alternate icon" href="./icon.svg" />
+    
+    <!-- Apple Mobile Web App Touch Icon & Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Gestão 3D" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./src/main.tsx"></script>
+    
+    <!-- PWA Service Worker Registration & Installation Prompt Catcher -->
+    <script>
+      window.deferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent mini-infobar on mobile browser to display our beautiful custom UI/modal instead
+        e.preventDefault();
+        window.deferredPrompt = e;
+        // Dispatch custom global event to let React know installation is ready
+        window.dispatchEvent(new CustomEvent('pwa-installable', { detail: e }));
+      });
+
+      window.addEventListener('appinstalled', (e) => {
+        console.log('Gestão 3D PWA instalado com sucesso!');
+        window.deferredPrompt = null;
+      });
+
+      // Register Service Worker for PWA Offline Fallback and App Installability
+      if ('serviceWorker' in navigator) {
+        // Detect if running inside the Android native wrapper
+        const isAndroidApp = window.location.hostname === 'appassets.androidplatform.net' || 
+                             (window.AndroidInterface !== undefined) ||
+                             (new URLSearchParams(window.location.search).get('nativeVersion') !== null);
+
+        if (isAndroidApp) {
+          // Forcefully unregister service workers inside native app to prevent aggressive caching traps
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            for (let registration of registrations) {
+              registration.unregister().then((success) => {
+                if (success) console.log('Service Worker unregistered natively.');
+              });
+            }
+          });
+          if ('caches' in window) {
+            caches.keys().then((names) => {
+              for (let name of names) {
+                caches.delete(name);
+              }
+            });
+          }
+          console.log('Service Worker disabled and WebView cache purged for android wrapper.');
+        } else {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+               .then((registration) => {
+                console.log('Gestão 3D Service Worker registrado com sucesso:', registration.scope);
+              })
+              .catch((err) => {
+                console.error('Falha ao registrar Service Worker do Bambuzau:', err);
+              });
+          });
+        }
+      }
+    </script>
+  </body>
+</html>
