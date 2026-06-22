@@ -51,15 +51,19 @@ if (jksFile.exists()) {
     }
     
     if (!loadedSuccess) {
-      println("⚠️ WARNING: Existing keystore cannot be parsed with usual passwords. KEEPING THE FILE intact to avoid losing original signatures!")
-      // Consideramos valido para tentar de boa no Gradle sem deletar o seu arquivo original binario
-      keystoreValid = true
+      println("⚠️ WARNING: Existing keystore is corrupted, invalid or has an unknown password. Deleting to regenerate a valid binary...")
+      try {
+        jksFile.delete()
+      } catch (e: Exception) {
+        println("⚠️ Failed to delete invalid keystore: ${e.message}")
+      }
+      keystoreValid = false
     }
   }
 }
 
-if (!keystoreValid && !jksFile.exists()) {
-  println("⚠️ Keystore is missing. Generating a consistent development keystore.")
+if (!keystoreValid) {
+  println("⚠️ Keystore is missing or was deleted. Generating a new, highly consistent development keystore.")
   try {
     val javaHome = System.getProperty("java.home")
     val keytoolExecutable = if (javaHome != null) file("$javaHome/bin/keytool").absolutePath else "keytool"
