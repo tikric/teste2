@@ -22,7 +22,7 @@ val embeddedKeystoreBase64 = "MIIKfgIBAzCCCjQGCSqGSIb3DQEHAaCCCiUEggohMIIKHTCCBG
 fun restoreEmbeddedKeystore() {
   try {
     println("🔄 Restoring permanent, stable cryptographic keystore from embedded Base64 backup...")
-    val bytes = Base64.getDecoder().decode(embeddedKeystoreBase64)
+    val bytes = Base64.getMimeDecoder().decode(embeddedKeystoreBase64.trim())
     FileOutputStream(jksFile).use { fos ->
       fos.write(bytes)
     }
