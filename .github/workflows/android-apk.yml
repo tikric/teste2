@@ -144,7 +144,6 @@ jobs:
           echo "key_alias=$FINAL_ALIAS" >> $GITHUB_OUTPUT
 
       - name: Build Android Release APK with Gradle
-        if: ${{ steps.keystore-setup.outputs.has_keystore == 'true' }}
         working-directory: app
         env:
           KEYSTORE_PATH: ../my-upload-key.jks
