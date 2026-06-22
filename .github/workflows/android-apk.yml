@@ -43,11 +43,11 @@ jobs:
 
       - name: Install Node dependencies and Compile Web app
         run: |
-          if [ -f package-lock.json ]; then
-            echo "package-lock.json found. Running npm ci..."
-            npm ci --prefer-offline
+          if [ -f package-lock.json ] && grep -q "lockfileVersion" package-lock.json; then
+            echo "Valid package-lock.json found. Running npm ci..."
+            npm ci --prefer-offline || (echo "⚠️ npm ci failed! Falling back to npm install..." && npm install --prefer-offline)
           else
-            echo "package-lock.json not found! Falling back to npm install..."
+            echo "⚠️ package-lock.json not found or invalid (LFS pointer)! Falling back to npm install..."
             npm install --prefer-offline
           fi
           npm run build
