@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getApiUrl } from './utils/api';
+import { getApiUrl, buildFirebaseTargetUrl } from './utils/api';
 import { safeStorage } from './utils/storage';
 import { Client, Printer, PrintOrder, FilamentStock, SupplyStock, Expense, ShoppingItem, ExternalPlatformOrder, CatalogItem } from './types';
 import { 
@@ -523,7 +523,11 @@ export default function App() {
       }));
 
       if (isMounted) {
+        isApplyingCloudData.current = true;
         setTuyaDevices(updated);
+        setTimeout(() => {
+          isApplyingCloudData.current = false;
+        }, 300);
       }
     }, 18000); // Drifts/Polls every 18 seconds
 
@@ -917,14 +921,7 @@ export default function App() {
         const firebaseUrl = localStorage.getItem('bambuzau_firebase_url') || 'https://bambuzau1-60868-default-rtdb.firebaseio.com/';
         const workspaceCode = localStorage.getItem('bambuzau_workspace_code') || 'principal';
         if (firebaseUrl && workspaceCode) {
-          let formattedUrl = firebaseUrl.trim();
-          if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-            formattedUrl = 'https://' + formattedUrl;
-          }
-          if (!formattedUrl.endsWith('/')) {
-            formattedUrl += '/';
-          }
-          const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}/update_info.json?nocache=${Date.now()}`;
+          const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}/update_info.json`, { nocache: String(Date.now()) });
           const response = await fetch(targetUrl, { cache: 'no-store' });
           if (response.ok) {
             const data = await response.json();
@@ -1016,19 +1013,11 @@ export default function App() {
       return;
     }
 
-    let formattedUrl = firebaseUrl.trim();
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-      formattedUrl = 'https://' + formattedUrl;
-    }
-    if (!formattedUrl.endsWith('/')) {
-      formattedUrl += '/';
-    }
-
     if (!silent) {
       setIsSyncingGlobal(true);
     }
     try {
-      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}.json`;
+      const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}.json`);
       const response = await fetch(targetUrl);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -1078,7 +1067,9 @@ export default function App() {
 
       const nowStr = new Date().toLocaleString('pt-BR');
       localStorage.setItem('bambuzau_last_sync_time', nowStr);
-      localStorage.setItem('bambuzau_last_local_update_time', (data.updatedAt || Date.now()).toString());
+      const serverUpdatedAt = (data.updatedAt || Date.now()).toString();
+      localStorage.setItem('bambuzau_last_local_update_time', serverUpdatedAt);
+      localStorage.setItem('bambuzau_last_known_cloud_timestamp', serverUpdatedAt);
       setLastSyncTime(nowStr);
       setCloudSyncStatus('synced');
 
@@ -1113,14 +1104,6 @@ export default function App() {
 
     if (!forceManual && (isSyncingGlobal || isSyncingBackground)) return;
 
-    let formattedUrl = firebaseUrl.trim();
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-      formattedUrl = 'https://' + formattedUrl;
-    }
-    if (!formattedUrl.endsWith('/')) {
-      formattedUrl += '/';
-    }
-
     if (forceManual) {
       setIsSyncingGlobal(true);
     } else {
@@ -1151,7 +1134,7 @@ export default function App() {
         }
       };
 
-      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}.json`;
+      const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}.json`);
       const response = await fetch(targetUrl, {
         method: 'PUT',
         headers: {
@@ -1163,8 +1146,9 @@ export default function App() {
       if (response.ok) {
         const nowStr = new Date().toLocaleString('pt-BR');
         localStorage.setItem('bambuzau_last_sync_time', nowStr);
-        // Align local update time with the exact payload timestamp we just successfully saved
+        // Align local update time and last known cloud timestamp with the exact payload timestamp we just successfully saved
         localStorage.setItem('bambuzau_last_local_update_time', uploadTs.toString());
+        localStorage.setItem('bambuzau_last_known_cloud_timestamp', uploadTs.toString());
         setLastSyncTime(nowStr);
         setCloudSyncStatus('synced');
         if (forceManual) {
@@ -1211,7 +1195,7 @@ export default function App() {
       }, 3000); // 3 seconds debounced
       return () => clearTimeout(dbTimer);
     }
-  }, [clients, printers, orders, filamentStocks, expenses, shoppingItems, tuyaDevices, brandConfig]);
+  }, [clients, printers, orders, filamentStocks, expenses, shoppingItems, brandConfig]);
 
   // Periodic polling of cloud update timestamp to identify cellular/device synchronizations
   useEffect(() => {
@@ -1220,29 +1204,38 @@ export default function App() {
 
     if (!firebaseUrl || !workspaceCode) return;
 
-    let formattedUrl = firebaseUrl.trim();
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-      formattedUrl = 'https://' + formattedUrl;
-    }
-    if (!formattedUrl.endsWith('/')) {
-      formattedUrl += '/';
-    }
-
     const runCheckSync = () => {
+      let lastKnownCloudTs = parseInt(localStorage.getItem('bambuzau_last_known_cloud_timestamp') || '0', 10);
       const localTs = parseInt(localStorage.getItem('bambuzau_last_local_update_time') || '0', 10);
+
+      // Initialize lastKnownCloudTs on startup to prevent false conflict alerts
+      if (lastKnownCloudTs === 0) {
+        lastKnownCloudTs = localTs;
+        localStorage.setItem('bambuzau_last_known_cloud_timestamp', localTs.toString());
+      }
       
-      fetch(`${formattedUrl}workspaces/${workspaceCode.trim()}/updatedAt.json?nocache=${Date.now()}`)
+      const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}/updatedAt.json`, { nocache: String(Date.now()) });
+      fetch(targetUrl)
         .then(res => res.json())
         .then(cloudTs => {
           if (cloudTs && typeof cloudTs === 'number') {
-            if (cloudTs > localTs + 2000) {
+            const hasLocalChanges = localTs > lastKnownCloudTs + 2000;
+            const hasCloudChanges = cloudTs > lastKnownCloudTs + 2000;
+
+            if (hasLocalChanges && hasCloudChanges) {
+              setCloudSyncStatus('conflict');
+            } else if (hasCloudChanges) {
               setCloudSyncStatus('newer');
               if (isAutoSync) {
                 // Instantly apply clean silent cloud resync
                 downloadAndApplyFromCloud(true);
               }
-            } else if (localTs > cloudTs + 2000) {
+            } else if (hasLocalChanges) {
               setCloudSyncStatus('older');
+              if (isAutoSync) {
+                // Instantly sync local changes up in background to stay current
+                triggerAutoUpload();
+              }
             } else {
               setCloudSyncStatus('synced');
             }
@@ -2176,11 +2169,13 @@ export default function App() {
               <span className="relative flex h-2 w-2">
                 <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                   cloudSyncStatus === 'newer' ? 'bg-amber-400' :
+                  cloudSyncStatus === 'conflict' ? 'bg-rose-500' :
                   cloudSyncStatus === 'synced' ? 'bg-emerald-400' :
                   isSyncingGlobal ? 'bg-blue-400 animate-pulse' : 'bg-zinc-400'
                 }`}></span>
                 <span className={`relative inline-flex rounded-full h-2 w-2 ${
                   cloudSyncStatus === 'newer' ? 'bg-amber-400' :
+                  cloudSyncStatus === 'conflict' ? 'bg-rose-500' :
                   cloudSyncStatus === 'synced' ? 'bg-emerald-400' :
                   isSyncingGlobal ? 'bg-blue-400' : 'bg-zinc-450'
                 }`}></span>
@@ -2190,10 +2185,12 @@ export default function App() {
               
               <span className={`font-black text-[10px] tracking-tight ${
                 cloudSyncStatus === 'newer' ? 'text-amber-300' :
+                cloudSyncStatus === 'conflict' ? 'text-rose-400 font-bold' :
                 cloudSyncStatus === 'synced' ? 'text-emerald-300' :
                 isSyncingGlobal ? 'text-blue-300 animate-pulse' : 'text-zinc-300'
               }`}>
                 {cloudSyncStatus === 'newer' ? 'Desatualizado ⚠️' :
+                 cloudSyncStatus === 'conflict' ? 'Conflito ⚠️' :
                  cloudSyncStatus === 'synced' ? 'Sincronizado ✓' :
                  isSyncingGlobal ? 'Lendo...' : 'Conectado'}
               </span>
@@ -2453,6 +2450,58 @@ export default function App() {
               title="Ativa a sincronização contínua em segundo plano"
             >
               Ativar Auto-Sincronização ⚡
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CENTRAL CLOUD SYNC CONFLICT ALERT BANNER (v3.3.0.5) */}
+      {cloudSyncStatus === 'conflict' && (
+        <div className="bg-gradient-to-r from-rose-600 via-[#e04555] to-amber-500 border-b border-rose-700 text-white px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl transition-all duration-300">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-2.5 rounded-xl animate-bounce shrink-0">
+              <AlertTriangle className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-extrabold tracking-tight flex items-center gap-2">
+                ⚠️ Conflito de Sincronização Detectado!
+              </p>
+              <p className="text-xs text-rose-50 leading-relaxed max-w-3xl mt-0.5 font-sans">
+                Você fez alterações neste dispositivo, mas o outro celular/dispositivo também salvou novos dados na nuvem simultaneamente! Escolha qual versão deseja manter para evitar perdas:
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto shrink-0 justify-end">
+            <button
+              onClick={() => {
+                downloadAndApplyFromCloud(false);
+              }}
+              disabled={isSyncingGlobal}
+              className="px-4.5 py-2.5 bg-white text-rose-700 font-extrabold text-xs rounded-xl shadow hover:bg-rose-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+              title="Baixa a versão da nuvem e substitui suas edições locais atuais"
+            >
+              📥 Puxar da Nuvem (Substituir local)
+            </button>
+            <button
+              onClick={() => {
+                triggerAutoUpload(true);
+              }}
+              disabled={isSyncingGlobal}
+              className="px-4.5 py-2.5 bg-zinc-900 border border-zinc-800 text-amber-300 font-extrabold text-xs rounded-xl shadow hover:bg-zinc-800 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+              title="Envia suas edições locais atuais e sobrescreve o arquivo na nuvem com força"
+            >
+              📤 Enviar para Nuvem (Forçar local)
+            </button>
+            <button
+              onClick={() => {
+                const localTs = localStorage.getItem('bambuzau_last_local_update_time') || '0';
+                localStorage.setItem('bambuzau_last_known_cloud_timestamp', localTs);
+                setCloudSyncStatus('synced');
+                setGlobalToast("✓ Conflito ignorado. Os dados serão mesclados na próxima alteração.");
+              }}
+              className="px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 text-xs font-semibold rounded-lg transition shrink-0"
+            >
+              Ignorar
             </button>
           </div>
         </div>

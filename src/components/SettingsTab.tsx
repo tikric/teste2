@@ -34,7 +34,7 @@ import {
   Server
 } from 'lucide-react';
 import { Client, Printer, PrintOrder, FilamentStock, Expense, ShoppingItem } from '../types';
-import { getApiUrl, validateApiKeyFormat, checkIsAndroidWebView, callGeminiGeneratePalette } from '../utils/api';
+import { getApiUrl, validateApiKeyFormat, checkIsAndroidWebView, callGeminiGeneratePalette, buildFirebaseTargetUrl } from '../utils/api';
 import { safeStorage } from '../utils/storage';
 
 interface SettingsTabProps {
@@ -120,12 +120,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
     setIsSyncing(true);
     try {
-      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-        formattedUrl = 'https://' + formattedUrl;
-      }
-      if (!formattedUrl.endsWith('/')) {
-        formattedUrl += '/';
-      }
+      const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}.json`);
 
       // Read local catalogItems which is in localStorage
       let localCatalog: any[] = [];
@@ -162,8 +157,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         }
       };
 
-      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}.json`;
-
       const response = await fetch(targetUrl, {
         method: 'PUT',
         headers: {
@@ -177,12 +170,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       }
 
       // Save sync settings
-      localStorage.setItem('bambuzau_firebase_url', formattedUrl);
+      localStorage.setItem('bambuzau_firebase_url', firebaseUrl.trim());
       localStorage.setItem('bambuzau_workspace_code', workspaceCode.trim());
       
       const nowStr = new Date().toLocaleString('pt-BR');
       localStorage.setItem('bambuzau_last_sync_time', nowStr);
       localStorage.setItem('bambuzau_last_local_update_time', uploadTs.toString());
+      localStorage.setItem('bambuzau_last_known_cloud_timestamp', uploadTs.toString());
       setLastSyncTime(nowStr);
 
       showSuccess('Sincronização concluída com sucesso! Os dados foram enviados para a Nuvem Firebase.');
@@ -218,14 +212,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
     setIsSyncing(true);
     try {
-      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-        formattedUrl = 'https://' + formattedUrl;
-      }
-      if (!formattedUrl.endsWith('/')) {
-        formattedUrl += '/';
-      }
-
-      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}.json`;
+      const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}.json`);
 
       const response = await fetch(targetUrl);
       if (!response.ok) {
@@ -238,7 +225,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       }
 
       // Success, write settings to localstorage
-      localStorage.setItem('bambuzau_firebase_url', formattedUrl);
+      localStorage.setItem('bambuzau_firebase_url', firebaseUrl.trim());
       localStorage.setItem('bambuzau_workspace_code', workspaceCode.trim());
 
       // Recover and set synchronized API keys automatically on any new device (phone/PC)
@@ -277,7 +264,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
       const nowStr = new Date().toLocaleString('pt-BR');
       localStorage.setItem('bambuzau_last_sync_time', nowStr);
-      localStorage.setItem('bambuzau_last_local_update_time', (data.updatedAt || Date.now()).toString());
+      const serverUpdatedAt = (data.updatedAt || Date.now()).toString();
+      localStorage.setItem('bambuzau_last_local_update_time', serverUpdatedAt);
+      localStorage.setItem('bambuzau_last_known_cloud_timestamp', serverUpdatedAt);
       setLastSyncTime(nowStr);
 
       showSuccess('Banco de dados resgatado com sucesso! O aplicativo será recarregado em instantes para aplicar...');
@@ -452,14 +441,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     setIsCheckingLiveFirebase(true);
     setLiveFirebaseError(null);
     try {
-      let formattedUrl = firebaseUrl.trim();
-      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-        formattedUrl = 'https://' + formattedUrl;
-      }
-      if (!formattedUrl.endsWith('/')) {
-        formattedUrl += '/';
-      }
-      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}/update_info.json?nocache=${Date.now()}`;
+      const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}/update_info.json`, { nocache: String(Date.now()) });
       const response = await fetch(targetUrl, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
@@ -519,13 +501,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       // Toda vez que atualizar o app, ele gera um backup antes obrigatoriamente
       createLocalRestorePoint(true);
 
-      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-        formattedUrl = 'https://' + formattedUrl;
-      }
-      if (!formattedUrl.endsWith('/')) {
-        formattedUrl += '/';
-      }
-
       const rawApkUrl = updateApkUrl.trim();
       let convertedApkUrl = rawApkUrl;
 
@@ -574,7 +549,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         timestamp: Date.now()
       };
 
-      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}/update_info.json`;
+      const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}/update_info.json`);
 
       const response = await fetch(targetUrl, {
         method: 'PUT',

@@ -20,6 +20,7 @@ import {
   Cpu
 } from 'lucide-react';
 import { CatalogItem } from '../types';
+import { buildFirebaseTargetUrl } from '../utils/api';
 
 interface ShowcaseViewProps {
   workspaceCode: string;
@@ -92,15 +93,7 @@ export const ShowcaseView: React.FC<ShowcaseViewProps> = ({
     const fetchShowcaseData = async () => {
       setLoading(true);
       try {
-        let formattedUrl = firebaseUrl.trim();
-        if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-          formattedUrl = 'https://' + formattedUrl;
-        }
-        if (!formattedUrl.endsWith('/')) {
-          formattedUrl += '/';
-        }
-
-        const targetUrl = `${formattedUrl}workspaces/${workspaceCode}.json`;
+        const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode}.json`);
         const res = await fetch(targetUrl);
         
         if (!res.ok) {

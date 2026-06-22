@@ -10,44 +10,56 @@ plugins {
 import java.security.KeyStore
 import java.io.FileInputStream
 
-// Auto-gera o keystore padrao fixo se nao existir na raiz, para garantir assinatura identica no Github e local.
-// Se existir com formato invalido (ex: Git LFS pointer, senha incorreta ou corrompido), deleta e garante a auto-recuperacao de um binario valido.
+// Auto-gera ou carrega o keystore padrao fixo de forma inteligente e nao destrutiva.
+// Se existir com formato valido, tenta carregar com as senhas candidatas usuais e detecta o alias correto
+// para garantir que a mesma assinatura seja usada e nunca mais de conflito de atualizacao no celular!
 val jksFile = file("${project.rootDir}/bambuzau-debug.jks")
 var keystoreValid = false
+var detectedAlias = "androiddebugkey"
+var detectedPassword = "android"
 
 if (jksFile.exists()) {
   if (jksFile.length() < 300) {
-    println("⚠️ Existing keystore is a Git LFS pointer (${jksFile.length()} bytes). Deleting to regenerate proper binary...")
+    println("⚠️ Existing keystore is a Git LFS pointer (${jksFile.length()} bytes). Deleting LFS file to pull proper layout...")
     try {
       jksFile.delete()
     } catch (e: Exception) {
       println("⚠️ Failed to delete Git LFS pointer: ${e.message}")
     }
   } else {
-    try {
-      val ks = KeyStore.getInstance(KeyStore.getDefaultType())
-      FileInputStream(jksFile).use { fis ->
-        ks.load(fis, "android".toCharArray())
-      }
-      if (ks.containsAlias("androiddebugkey")) {
-        keystoreValid = true
-        println("✅ Existing keystore bambuzau-debug.jks loaded successfully with valid alias and password!")
-      } else {
-        println("⚠️ Keystore loaded but doesn't contain alias 'androiddebugkey'!")
-      }
-    } catch (e: Exception) {
-      println("⚠️ Existing keystore is corrupted, invalid or LFS pointer (${e.message}). Deleting and regenerating...")
+    // Tenta abrir de forma robusta e ler o alias dinamicamente com senhas comuns
+    val candidatePasswords = listOf("android", "bambuzau", "bambuzau123", "bambuzau3d")
+    var loadedSuccess = false
+    for (pwd in candidatePasswords) {
       try {
-        jksFile.delete()
-      } catch (ex: Exception) {
-        println("⚠️ Failed to delete corrupted keystore: ${ex.message}")
+        val ks = KeyStore.getInstance(KeyStore.getDefaultType())
+        FileInputStream(jksFile).use { fis ->
+          ks.load(fis, pwd.toCharArray())
+        }
+        val aliases = ks.aliases().toList()
+        if (aliases.isNotEmpty()) {
+          detectedAlias = aliases.first().toString()
+          detectedPassword = pwd
+          keystoreValid = true
+          loadedSuccess = true
+          println("✅ Existing keystore bambuzau-debug.jks loaded successfully! Alias: '$detectedAlias', Password: '$pwd'")
+          break
+        }
+      } catch (e: Exception) {
+        // Tenta a proxima senha candidata
       }
+    }
+    
+    if (!loadedSuccess) {
+      println("⚠️ WARNING: Existing keystore cannot be parsed with usual passwords. KEEPING THE FILE intact to avoid losing original signatures!")
+      // Consideramos valido para tentar de boa no Gradle sem deletar o seu arquivo original binario
+      keystoreValid = true
     }
   }
 }
 
-if (!keystoreValid) {
-  println("⚠️ Keystore is missing, corrupted, or invalid. Regenerating to prevent Gradle packaging crash.")
+if (!keystoreValid && !jksFile.exists()) {
+  println("⚠️ Keystore is missing. Generating a consistent development keystore.")
   try {
     val javaHome = System.getProperty("java.home")
     val keytoolExecutable = if (javaHome != null) file("$javaHome/bin/keytool").absolutePath else "keytool"
@@ -69,7 +81,10 @@ if (!keystoreValid) {
     val process = pb.start()
     val exitCode = process.waitFor()
     if (exitCode == 0) {
-      println("✅ Fresh keystore bambuzau-debug.jks generated successfully with correct configuration!")
+      keystoreValid = true
+      detectedAlias = "androiddebugkey"
+      detectedPassword = "android"
+      println("✅ Fresh keystore bambuzau-debug.jks generated successfully with standard configurations!")
     } else {
       println("⚠️ Falha ao gerar o keystore via keytool (exit code: $exitCode)")
     }
@@ -77,6 +92,11 @@ if (!keystoreValid) {
     println("⚠️ Nao foi possivel gerar o keystore automaticamente: ${e.message}")
   }
 }
+
+val finalStoreFile = if (jksFile.exists()) jksFile else null
+val finalStorePassword = detectedPassword
+val finalKeyAlias = detectedAlias
+val finalKeyPassword = detectedPassword
 
 android {
   namespace = "com.bambuzau3d"
@@ -163,20 +183,29 @@ android {
         keyAlias = finalAlias
         keyPassword = customKeyPass
       } else {
-        // Fallback robust para garantir que o build sempre complete com assinatura consistente e permanente
-        storeFile = jksFile
-        storePassword = "android"
-        keyAlias = "androiddebugkey"
-        keyPassword = "android"
+        // Fallback robusto e inteligente que usa as credenciais autodetectadas da JKS para evitar novos pares aleatorios
+        if (finalStoreFile != null && finalStoreFile.exists()) {
+          storeFile = finalStoreFile
+          storePassword = finalStorePassword
+          keyAlias = finalKeyAlias
+          keyPassword = finalKeyPassword
+        } else {
+          // Deixa o default nativo para que o Gradle use a debug key padrao estável da sua propria maquina
+          println("⚠️ [Signature-Warning]: fall-backing to native system debug.keystore")
+        }
       }
       enableV1Signing = true
       enableV2Signing = true
     }
     getByName("debug") {
-      storeFile = jksFile
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
+      if (finalStoreFile != null && finalStoreFile.exists()) {
+        storeFile = finalStoreFile
+        storePassword = finalStorePassword
+        keyAlias = finalKeyAlias
+        keyPassword = finalKeyPassword
+      } else {
+        println("⚙️ [Signature-Info]: using native system debug.keystore on this machine")
+      }
       enableV1Signing = true
       enableV2Signing = true
     }

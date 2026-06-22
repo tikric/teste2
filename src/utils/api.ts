@@ -45,6 +45,63 @@ export function getApiUrl(endpoint: string): string {
 }
 
 /**
+ * Safely builds a Firebase Realtime Database target URL, preserving any existing search params (like ?auth=SECRET_KEY)
+ * and placing the workspace prefix and filename path correctly before the query parameters.
+ */
+export function buildFirebaseTargetUrl(baseUrl: string, relativePath: string, extraParams: Record<string, string> = {}): string {
+  let cleanedBaseUrl = baseUrl.trim();
+  
+  if (!cleanedBaseUrl.startsWith('http://') && !cleanedBaseUrl.startsWith('https://')) {
+    cleanedBaseUrl = 'https://' + cleanedBaseUrl;
+  }
+  
+  try {
+    const urlObj = new URL(cleanedBaseUrl);
+    
+    // Ensure the base path ends with a slash
+    let targetPath = urlObj.pathname;
+    if (!targetPath.endsWith('/')) {
+      targetPath += '/';
+    }
+    
+    // Stitch pathname safely
+    const cleanRelativePath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+    urlObj.pathname = targetPath + cleanRelativePath;
+    
+    // Append any extra params
+    for (const [key, value] of Object.entries(extraParams)) {
+      urlObj.searchParams.set(key, value);
+    }
+    
+    return urlObj.toString();
+  } catch (err) {
+    console.warn("URL constructor failed for Firebase, using fallback string compiler", err);
+    
+    let qIdx = cleanedBaseUrl.indexOf('?');
+    let baseWithoutQuery = qIdx !== -1 ? cleanedBaseUrl.slice(0, qIdx) : cleanedBaseUrl;
+    let queryStr = qIdx !== -1 ? cleanedBaseUrl.slice(qIdx + 1) : '';
+    
+    if (!baseWithoutQuery.endsWith('/')) {
+      baseWithoutQuery += '/';
+    }
+    
+    const cleanRelativePath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+    let result = baseWithoutQuery + cleanRelativePath;
+    
+    const params = new URLSearchParams(queryStr);
+    for (const [key, value] of Object.entries(extraParams)) {
+      params.set(key, value);
+    }
+    
+    const finalQuery = params.toString();
+    if (finalQuery) {
+      result += '?' + finalQuery;
+    }
+    return result;
+  }
+}
+
+/**
  * Directly communicates with Groq APIs on the client side.
  */
 export async function callGroq(apiKey: string, systemPrompt: string, userMessage: string, previousMessages: any[] = []): Promise<string> {
