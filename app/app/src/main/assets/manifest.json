@@ -1,7 +1,7 @@
 {
-  "name": "Bambuzau 3D",
-  "short_name": "Bambuzau",
-  "description": "Bambuzau 3D - Gestão de Produção, Custos e Estoque",
+  "name": "Gestão 3D",
+  "short_name": "Gestão 3D",
+  "description": "Gestão 3D - Gestão de Produção, Custos e Estoque",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

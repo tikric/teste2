@@ -489,7 +489,7 @@ export const CostsTab: React.FC<CostsTabProps> = ({
   const [editStockFilamentMinAlert, setEditStockFilamentMinAlert] = useState(200);
   const [editStockSupplyMinAlert, setEditStockSupplyMinAlert] = useState(1);
 
-  // Product editing and month tracking states (v3.3.0.6)
+  // Product editing and month tracking states (v3.3.0.4)
   const [editingProduct, setEditingProduct] = useState<CatalogItem | null>(null);
   const [expenseMonth, setExpenseMonth] = useState<string>(() => {
     const d = new Date();
@@ -1090,7 +1090,7 @@ export const CostsTab: React.FC<CostsTabProps> = ({
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(8);
       doc.setTextColor(170, 170, 170);
-      doc.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}  |  Atualização v3.3.0.6`, 16, 39);
+      doc.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}  |  Atualização v3.3.0.4`, 16, 39);
 
       y = 52;
 
@@ -1231,7 +1231,7 @@ export const CostsTab: React.FC<CostsTabProps> = ({
 
       text += `-----------------------------------------------\n`;
       text += `💰 *VALOR TOTAL CONSOLIDADO: R$ ${totalSum.toFixed(2)}*\n\n`;
-      text += `⚡ _Enviado via Ateliê de Impressão 3D v3.3.0.6_`;
+      text += `⚡ _Enviado via Ateliê de Impressão 3D v3.3.0.4_`;
 
       const android = (window as any).AndroidInterface;
       if (android && typeof android.copyToClipboard === 'function') {
@@ -2943,7 +2943,7 @@ Utilize a nossa nova calculadora de formação de preço de produtos para obter 
               </button>
             </div>
 
-            {/* Painel de Carretéis e Cores com Valor Médio por Tipo (v3.3.0.6) */}
+            {/* Painel de Carretéis e Cores com Valor Médio por Tipo (v3.3.0.4) */}
             <div className="p-3.5 bg-black/50 border border-[#232B27] rounded-xl space-y-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono font-black text-[#95BBA2] uppercase tracking-wider block">📊 Painel de Carretéis & Cores</span>
@@ -3550,7 +3550,7 @@ Utilize a nossa nova calculadora de formação de preço de produtos para obter 
                 </button>
               </form>
 
-              {/* Relatórios & Filtro de Caixa (v3.3.0.6) */}
+              {/* Relatórios & Filtro de Caixa (v3.3.0.4) */}
               <div className="p-3.5 bg-black/40 border border-[#232B27] rounded-xl space-y-2 flex flex-col">
                 <span className="text-[9.5px] font-mono font-black text-[#95BBA2] uppercase tracking-wider block">📊 Relatórios & Filtro por Período</span>
                 <div className="flex gap-2">

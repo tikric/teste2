@@ -34,7 +34,7 @@ import {
   Server
 } from 'lucide-react';
 import { Client, Printer, PrintOrder, FilamentStock, Expense, ShoppingItem } from '../types';
-import { getApiUrl, validateApiKeyFormat, checkIsAndroidWebView, callGeminiGeneratePalette, buildFirebaseTargetUrl } from '../utils/api';
+import { getApiUrl, validateApiKeyFormat, checkIsAndroidWebView, callGeminiGeneratePalette } from '../utils/api';
 import { safeStorage } from '../utils/storage';
 
 interface SettingsTabProps {
@@ -120,7 +120,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
     setIsSyncing(true);
     try {
-      const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}.json`);
+      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+        formattedUrl = 'https://' + formattedUrl;
+      }
+      if (!formattedUrl.endsWith('/')) {
+        formattedUrl += '/';
+      }
 
       // Read local catalogItems which is in localStorage
       let localCatalog: any[] = [];
@@ -133,10 +138,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         console.error('Error loading local catalog', e);
       }
 
-      const uploadTs = Date.now();
       // Compile current state payload
       const payload = {
-        updatedAt: uploadTs,
+        updatedAt: Date.now(),
         clients: clients || [],
         printers: printers || [],
         orders: orders || [],
@@ -157,6 +161,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         }
       };
 
+      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}.json`;
+
       const response = await fetch(targetUrl, {
         method: 'PUT',
         headers: {
@@ -170,13 +176,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       }
 
       // Save sync settings
-      localStorage.setItem('bambuzau_firebase_url', firebaseUrl.trim());
+      localStorage.setItem('bambuzau_firebase_url', formattedUrl);
       localStorage.setItem('bambuzau_workspace_code', workspaceCode.trim());
       
       const nowStr = new Date().toLocaleString('pt-BR');
       localStorage.setItem('bambuzau_last_sync_time', nowStr);
-      localStorage.setItem('bambuzau_last_local_update_time', uploadTs.toString());
-      localStorage.setItem('bambuzau_last_known_cloud_timestamp', uploadTs.toString());
       setLastSyncTime(nowStr);
 
       showSuccess('Sincronização concluída com sucesso! Os dados foram enviados para a Nuvem Firebase.');
@@ -212,7 +216,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
     setIsSyncing(true);
     try {
-      const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}.json`);
+      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+        formattedUrl = 'https://' + formattedUrl;
+      }
+      if (!formattedUrl.endsWith('/')) {
+        formattedUrl += '/';
+      }
+
+      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}.json`;
 
       const response = await fetch(targetUrl);
       if (!response.ok) {
@@ -225,7 +236,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       }
 
       // Success, write settings to localstorage
-      localStorage.setItem('bambuzau_firebase_url', firebaseUrl.trim());
+      localStorage.setItem('bambuzau_firebase_url', formattedUrl);
       localStorage.setItem('bambuzau_workspace_code', workspaceCode.trim());
 
       // Recover and set synchronized API keys automatically on any new device (phone/PC)
@@ -264,9 +275,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
       const nowStr = new Date().toLocaleString('pt-BR');
       localStorage.setItem('bambuzau_last_sync_time', nowStr);
-      const serverUpdatedAt = (data.updatedAt || Date.now()).toString();
-      localStorage.setItem('bambuzau_last_local_update_time', serverUpdatedAt);
-      localStorage.setItem('bambuzau_last_known_cloud_timestamp', serverUpdatedAt);
       setLastSyncTime(nowStr);
 
       showSuccess('Banco de dados resgatado com sucesso! O aplicativo será recarregado em instantes para aplicar...');
@@ -420,7 +428,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   };
 
   const [updateVersion, setUpdateVersion] = useState(() => {
-    return localStorage.getItem('bambuzau_update_version') || '3.3.0.6';
+    return localStorage.getItem('bambuzau_update_version') || '3.3.0.4';
   });
   const [updateApkUrl, setUpdateApkUrl] = useState(() => {
     return localStorage.getItem('bambuzau_update_apk_url') || '';
@@ -441,7 +449,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     setIsCheckingLiveFirebase(true);
     setLiveFirebaseError(null);
     try {
-      const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}/update_info.json`, { nocache: String(Date.now()) });
+      let formattedUrl = firebaseUrl.trim();
+      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+        formattedUrl = 'https://' + formattedUrl;
+      }
+      if (!formattedUrl.endsWith('/')) {
+        formattedUrl += '/';
+      }
+      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}/update_info.json?nocache=${Date.now()}`;
       const response = await fetch(targetUrl, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
@@ -501,6 +516,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       // Toda vez que atualizar o app, ele gera um backup antes obrigatoriamente
       createLocalRestorePoint(true);
 
+      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+        formattedUrl = 'https://' + formattedUrl;
+      }
+      if (!formattedUrl.endsWith('/')) {
+        formattedUrl += '/';
+      }
+
       const rawApkUrl = updateApkUrl.trim();
       let convertedApkUrl = rawApkUrl;
 
@@ -549,7 +571,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         timestamp: Date.now()
       };
 
-      const targetUrl = buildFirebaseTargetUrl(firebaseUrl, `workspaces/${workspaceCode.trim()}/update_info.json`);
+      const targetUrl = `${formattedUrl}workspaces/${workspaceCode.trim()}/update_info.json`;
 
       const response = await fetch(targetUrl, {
         method: 'PUT',
@@ -775,7 +797,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
       const exportObject = {
         app_signature: 'Gestao3D_Backup',
-        version: '3.3.0.6',
+        version: '3.3.0.4',
         timestamp: Date.now(),
         clients: clients || [],
         printers: printers || [],
@@ -900,7 +922,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
       const exportObject = {
         app_signature: 'Gestao3D_Backup',
-        version: '3.3.0.6',
+        version: '3.3.0.4',
         timestamp: Date.now(),
         clients: clients || [],
         printers: printers || [],
@@ -2084,7 +2106,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             {showClipboardBackup && (
               <div className="mt-3 bg-[#0C0E0D] border border-purple-500/10 p-3.5 rounded-xl space-y-3 animate-fade-in">
                 <p className="text-[10px] text-[#8BA58D] leading-relaxed">
-                  Bypass de arquivos para Celulares e WebViews! Trata as informações do Ateliê como um bloco de texto que você copia e cola à vontade. Versão 3.3.0.6.
+                  Bypass de arquivos para Celulares e WebViews! Trata as informações do Ateliê como um bloco de texto que você copia e cola à vontade. Versão 3.3.0.4.
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -2189,21 +2211,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </div>
 
           <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
-            <div className="p-2.5 bg-[#0C0E0D] border-l-2 border-amber-500 rounded-r-xl space-y-1 font-sans">
+            <div className="p-2.5 bg-[#0C0E0D] border-l-2 border-emerald-500 rounded-r-xl space-y-1 font-sans">
               <div className="flex justify-between items-center text-[10px]">
-                <strong className="text-white text-xs font-black">Versão 3.3.0.6 (Atual)</strong>
-                <span className="text-amber-400 font-mono font-bold">Junho/2026</span>
-              </div>
-              <ul className="list-disc pl-4 text-[10px] text-[#8BA58D] space-y-0.5 font-sans leading-relaxed">
-                <li><strong>Design de UI Premium Renovado</strong>: Layout refinado com bordas brilhantes, paleta ultra-moderna de alta densidade e o novo tema visual Aurora Cósmica embutido.</li>
-                <li><strong>Melhoria de Performance e Build</strong>: Processamentos otimizados de renderização e exportações integradas mais rápidas.</li>
-              </ul>
-            </div>
-
-            <div className="p-2.5 bg-[#0C0E0D]/85 border-l-2 border-[#2F3D35] rounded-r-xl space-y-1 font-sans opacity-85">
-              <div className="flex justify-between items-center text-[10px]">
-                <strong className="text-white text-xs font-black">Versão 3.3.0.4 (Anterior)</strong>
-                <span className="text-zinc-500 font-mono font-bold">Junho/2026</span>
+                <strong className="text-white text-xs font-black">Versão 3.3.0.4 (Atual)</strong>
+                <span className="text-emerald-400 font-mono font-bold">Junho/2026</span>
               </div>
               <ul className="list-disc pl-4 text-[10px] text-[#8BA58D] space-y-0.5 font-sans leading-relaxed">
                 <li><strong>Motor de Sincronização Inteligente</strong>: Upload e download automático em tempo real no celular e computador sem recarregar a página com opção de sincronização contínua.</li>
@@ -2601,8 +2612,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           {/* DIAGNOSTIC WIDGET PANEL FOR OTA UPDATES */}
           {(() => {
             const getLocalAppVer = () => {
-              // Retorna a versão dos ativos Web ativos em execução (v3.3.0.6). Isso resolve o loop de atualizações no smartphone
-              return '3.3.0.6';
+              // Retorna a versão dos ativos Web ativos em execução (v3.3.0.4). Isso resolve o loop de atualizações no smartphone
+              return '3.3.0.4';
             };
 
             const getNativeShellVer = () => {
@@ -2833,7 +2844,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 id="branding_theme_select"
               >
                 {aiColors && <option value="custom">✨ Paleta Gerada por IA (Logotipo) ✨</option>}
-                <option value="cosmic-aurora">🌌 Aurora Cósmica (Esmeralda, Ciano & Âmbar Premium)</option>
                 <option value="dark-organic">Natural Escuro (Sálvia & Ouro)</option>
                 <option value="light-bambu">Nativo Claro (Areia & Verde Folha)</option>
                 <option value="dark-slate">Grafite Escovado (Cobalto & Cinza Escuro)</option>
