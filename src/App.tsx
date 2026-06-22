@@ -431,9 +431,9 @@ export default function App() {
   }[]>(() => {
     try {
       const saved = localStorage.getItem('bambuzau_tuya_devices');
-      if (saved) {
+      if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       }
@@ -1036,8 +1036,21 @@ export default function App() {
       if (data.filamentStocks) setFilamentStocks(data.filamentStocks);
       if (data.expenses) setExpenses(data.expenses);
       if (data.shoppingItems) setShoppingItems(data.shoppingItems);
-      if (data.tuyaDevices && data.tuyaDevices.length > 0) setTuyaDevices(data.tuyaDevices);
+      if (data.tuyaDevices !== undefined) setTuyaDevices(data.tuyaDevices || []);
       if (data.brandConfig) setBrandConfig(data.brandConfig);
+
+      // Restore and apply custom API Keys synchronized on cloud safely via safeStorage
+      if (data.customKeys) {
+        if (data.customKeys.geminiKey) safeStorage.setItem('bambuzau_custom_gemini_key', data.customKeys.geminiKey);
+        if (data.customKeys.groqKey) safeStorage.setItem('bambuzau_custom_groq_key', data.customKeys.groqKey);
+        if (data.customKeys.serpKey) safeStorage.setItem('bambuzau_custom_serp_key', data.customKeys.serpKey);
+        if (data.customKeys.tavilyKey) safeStorage.setItem('bambuzau_custom_tavily_key', data.customKeys.tavilyKey);
+        if (data.customKeys.jinaKey) safeStorage.setItem('bambuzau_custom_jina_key', data.customKeys.jinaKey);
+        if (data.customKeys.aiProvider) safeStorage.setItem('bambuzau_ai_provider', data.customKeys.aiProvider);
+        if (data.customKeys.webOrigin) {
+          safeStorage.setItem('bambuzau_web_origin', data.customKeys.webOrigin);
+        }
+      }
 
       // Write straight to localStorage as a durable backing
       if (data.clients) localStorage.setItem('bambuzau_clients', JSON.stringify(data.clients));
@@ -1047,7 +1060,7 @@ export default function App() {
       if (data.expenses) localStorage.setItem('bambuzau_expenses', JSON.stringify(data.expenses));
       if (data.shoppingItems) localStorage.setItem('bambuzau_shopping', JSON.stringify(data.shoppingItems));
       if (data.brandConfig) localStorage.setItem('bambuzau_brand_config', JSON.stringify(data.brandConfig));
-      if (data.tuyaDevices) localStorage.setItem('bambuzau_tuya_devices', JSON.stringify(data.tuyaDevices));
+      if (data.tuyaDevices !== undefined) localStorage.setItem('bambuzau_tuya_devices', JSON.stringify(data.tuyaDevices || []));
       if (data.catalogItems) localStorage.setItem('bambuzau_local_catalog_production', JSON.stringify(data.catalogItems));
 
       const nowStr = new Date().toLocaleString('pt-BR');
@@ -1069,11 +1082,16 @@ export default function App() {
     }
   };
 
-  const triggerAutoUpload = async () => {
+  const triggerAutoUpload = async (forceManual = false) => {
     const firebaseUrl = localStorage.getItem('bambuzau_firebase_url') || 'https://bambuzau1-60868-default-rtdb.firebaseio.com/';
     const workspaceCode = localStorage.getItem('bambuzau_workspace_code') || 'principal';
 
-    if (!firebaseUrl || !workspaceCode || isSyncingGlobal || isSyncingBackground) return;
+    if (!firebaseUrl || !workspaceCode) {
+      if (forceManual) setGlobalToast("⚠️ Servidor ou Workspace Firebase não configurado!");
+      return;
+    }
+
+    if (!forceManual && (isSyncingGlobal || isSyncingBackground)) return;
 
     let formattedUrl = firebaseUrl.trim();
     if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
@@ -1083,7 +1101,12 @@ export default function App() {
       formattedUrl += '/';
     }
 
-    setIsSyncingBackground(true);
+    if (forceManual) {
+      setIsSyncingGlobal(true);
+    } else {
+      setIsSyncingBackground(true);
+    }
+
     try {
       const payload = {
         updatedAt: Date.now(),
@@ -1097,12 +1120,12 @@ export default function App() {
         brandConfig: brandConfig,
         tuyaDevices: tuyaDevices || [],
         customKeys: {
-          geminiKey: localStorage.getItem('bambuzau_custom_gemini_key') || '',
-          groqKey: localStorage.getItem('bambuzau_custom_groq_key') || '',
-          serpKey: localStorage.getItem('bambuzau_custom_serp_key') || '',
-          tavilyKey: localStorage.getItem('bambuzau_custom_tavily_key') || '',
-          jinaKey: localStorage.getItem('bambuzau_custom_jina_key') || '',
-          aiProvider: localStorage.getItem('bambuzau_ai_provider') || 'gemini',
+          geminiKey: safeStorage.getItem('bambuzau_custom_gemini_key') || '',
+          groqKey: safeStorage.getItem('bambuzau_custom_groq_key') || '',
+          serpKey: safeStorage.getItem('bambuzau_custom_serp_key') || '',
+          tavilyKey: safeStorage.getItem('bambuzau_custom_tavily_key') || '',
+          jinaKey: safeStorage.getItem('bambuzau_custom_jina_key') || '',
+          aiProvider: safeStorage.getItem('bambuzau_ai_provider') || 'gemini',
           webOrigin: typeof window !== 'undefined' ? window.location.origin : ''
         }
       };
@@ -1121,11 +1144,25 @@ export default function App() {
         localStorage.setItem('bambuzau_last_sync_time', nowStr);
         setLastSyncTime(nowStr);
         setCloudSyncStatus('synced');
+        if (forceManual) {
+          setGlobalToast("📤 Seus dados locais foram salvos e ENVIADOS para a Nuvem!");
+        }
+      } else {
+        if (forceManual) {
+          setGlobalToast(`❌ Falha ao enviar para o Firebase: HTTP ${response.status}`);
+        }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn("Background auto-upload sync failure:", e);
+      if (forceManual) {
+        setGlobalToast(`❌ Erro de conexão: ${e.message}`);
+      }
     } finally {
-      setIsSyncingBackground(false);
+      if (forceManual) {
+        setIsSyncingGlobal(false);
+      } else {
+        setIsSyncingBackground(false);
+      }
     }
   };
 
@@ -1206,8 +1243,8 @@ export default function App() {
     if (data.filamentStocks) setFilamentStocks(data.filamentStocks);
     if (data.expenses) setExpenses(data.expenses);
     if (data.shoppingItems) setShoppingItems(data.shoppingItems);
-    if (data.tuyaDevices && data.tuyaDevices.length > 0) {
-      setTuyaDevices(data.tuyaDevices);
+    if (data.tuyaDevices !== undefined) {
+      setTuyaDevices(data.tuyaDevices || []);
     }
   };
   const handleAddClient = (clientData: Omit<Client, 'id'>) => {
@@ -2136,10 +2173,19 @@ export default function App() {
               <button
                 onClick={() => downloadAndApplyFromCloud(false)}
                 disabled={isSyncingGlobal}
-                className="ml-1 px-2 py-0.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/20 hover:border-emerald-500/45 text-emerald-300 rounded-lg text-[9px] font-black tracking-tight uppercase cursor-pointer transition active:scale-95"
-                title="Sincronizar e baixar dados salvos pelo Celular"
+                className="ml-1 px-2 py-0.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/20 hover:border-emerald-500/45 text-emerald-300 rounded-lg text-[9px] font-black tracking-tight uppercase cursor-pointer transition active:scale-95 animate-pulse-subtle"
+                title="Sincronizar e baixar dados salvos do Firebase"
               >
-                Puxar Nuvem 🔄
+                Puxar Nuvem 📥
+              </button>
+
+              <button
+                onClick={() => triggerAutoUpload(true)}
+                disabled={isSyncingGlobal}
+                className="px-2 py-0.5 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/20 hover:border-sky-500/45 text-sky-300 rounded-lg text-[9px] font-black tracking-tight uppercase cursor-pointer transition active:scale-95"
+                title="Salvar e subir seus dados locais atuais para o Firebase"
+              >
+                Enviar Nuvem 📤
               </button>
 
               <button
@@ -2148,6 +2194,11 @@ export default function App() {
                     const newVal = !prev;
                     localStorage.setItem('bambuzau_auto_sync', newVal ? 'true' : 'false');
                     setGlobalToast(newVal ? "⚡ Auto-Sincronização Ativada!" : "⏸️ Auto-Sincronização Desativada.");
+                    if (newVal) {
+                      setTimeout(() => {
+                        triggerAutoUpload(false);
+                      }, 500);
+                    }
                     return newVal;
                   });
                 }}
