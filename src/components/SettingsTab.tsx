@@ -813,23 +813,30 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       const dateStr = new Date().toISOString().slice(0, 10);
       const fileName = `gestao3d_backup_${dateStr}.json`;
 
+      let androidSaved = false;
       const android = (window as any).AndroidInterface;
       if (android && typeof android.saveFile === 'function') {
-        android.saveFile(fileName, jsonBackupText, "application/json");
-        return;
+        try {
+          android.saveFile(fileName, jsonBackupText, "application/json");
+          androidSaved = true;
+        } catch (androidErr: any) {
+          console.warn("Falha ao salvar via AndroidInterface, usando fallback do navegador:", androidErr);
+        }
       }
 
-      // Safe, high-performance Blob download to prevent URI too large crashes on large databases
-      const blob = new Blob([jsonBackupText], { type: "application/json" });
-      const downloadUrl = URL.createObjectURL(blob);
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", downloadUrl);
-      downloadAnchor.setAttribute("download", fileName);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      // Free browser memory
-      URL.revokeObjectURL(downloadUrl);
+      if (!androidSaved) {
+        // Safe, high-performance Blob download to prevent URI too large crashes on large databases
+        const blob = new Blob([jsonBackupText], { type: "application/json" });
+        const downloadUrl = URL.createObjectURL(blob);
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", downloadUrl);
+        downloadAnchor.setAttribute("download", fileName);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        // Free browser memory
+        URL.revokeObjectURL(downloadUrl);
+      }
 
       showSuccess('Backup baixado com sucesso! Guarde este arquivo em segurança no seu PC ou pendrive.');
     } catch (err: any) {
@@ -929,10 +936,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
       const jsonString = JSON.stringify(exportObject, null, 2);
 
+      let copiedNatively = false;
       const android = (window as any).AndroidInterface;
       if (android && typeof android.copyToClipboard === 'function') {
-        android.copyToClipboard(jsonString);
-        return;
+        try {
+          android.copyToClipboard(jsonString);
+          copiedNatively = true;
+        } catch (copyErr: any) {
+          console.warn("Falha ao copiar usando AndroidInterface, usando fallback padrao:", copyErr);
+        }
       }
 
       const fallbackCopy = (textToCopy: string) => {
@@ -960,13 +972,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         });
       };
 
-      fallbackCopy(jsonString)
-        .then(() => {
-          showSuccess('Código de backup copiado para a Área de Transferência com absoluto sucesso! Você já pode salvar no WhatsApp, Keep ou Gmail.');
-        })
-        .catch((err) => {
-          showError('Falha ao usar Área de Transferência: ' + err.message);
-        });
+      if (copiedNatively) {
+        showSuccess('Código de backup copiado para a Área de Transferência com absoluto sucesso! Você já pode salvar no WhatsApp, Keep ou Gmail.');
+      } else {
+        fallbackCopy(jsonString)
+          .then(() => {
+            showSuccess('Código de backup copiado para a Área de Transferência com absoluto sucesso! Você já pode salvar no WhatsApp, Keep ou Gmail.');
+          })
+          .catch((err) => {
+            showError('Falha ao usar Área de Transferência: ' + err.message);
+          });
+      }
     } catch (e: any) {
       showError('Ocorreu um erro ao estruturar backup em texto: ' + e.message);
     }
@@ -2099,7 +2115,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     onClick={handleExportToClipboard}
                     className="py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer font-sans"
                   >
-                    <Clipboard className="h-3.5 w-3.5" />
+                    <FileText className="h-3.5 w-3.5 text-purple-400" />
                     Copiar Backup em Texto
                   </button>
                   <button
